@@ -5,7 +5,7 @@ __pycache__/
 *.pyd
 
 # Virtual env
-venv/
+.venv/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints
@@ -15,7 +15,11 @@ venv/
 *.tsv
 *.log
 *.dat
+*.parquet
+
 
 # OS files
 .DS_Store
 Thumbs.db
+
+data/
