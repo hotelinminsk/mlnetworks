@@ -17,18 +17,20 @@ def main():
     print(f"Training IsolationForest on {len(X_benign):,} benign samples...")
 
     clf = IsolationForest(
-        n_estimators=200,
-        contamination=CONTAMINATION,
+        n_estimators=400,
+        max_samples=2048,
+        contamination='auto',
         random_state=RANDOM_STATE,
         n_jobs=-1,
-        verbose=1
+        verbose=1,
     )
 
     clf.fit(X_benign)
 
     # modeli kaydet
     dump(clf, MODELS / "isolation_forest.joblib")
-    print("✅ Model trained and saved to models/isolation_forest.joblib")
+    # Avoid emoji to prevent Windows console encoding issues
+    print("Model trained and saved to models/isolation_forest.joblib")
 
 if __name__ == "__main__":
     main()

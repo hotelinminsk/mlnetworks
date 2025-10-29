@@ -7,9 +7,11 @@ prepare:
 train:
 	python -m src.train_iforest
 
+train_sup:
+	python -m src.train_supervised
+
 eval:
 	python -m src.evaluate
 
 app:
 	streamlit run app/streamlit_app.py
-
