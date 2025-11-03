@@ -6,6 +6,8 @@ __pycache__/
 
 # Virtual env
 .venv/
+venv/
+env/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints
@@ -17,9 +19,31 @@ __pycache__/
 *.dat
 *.parquet
 
+# Model files (large - don't commit)
+models/*.joblib
+models/*.pkl
+models/*.h5
+models/*.pth
+
+# MLflow tracking
+mlruns/
+
+# Reports (large files)
+reports/*.png
+reports/*.html
+reports/*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Environment
+.env
+.env.local
 
 data/
