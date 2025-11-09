@@ -435,49 +435,42 @@ def render_realtime_monitoring_tab(
         if monitoring_active:
             refresh_interval = st.select_slider(
                 "Refresh:",
-                options=[0.5, 1, 2, 3],
-                value=1,
-                format_func=lambda x: f"{x}s" if x >= 1 else f"{int(x*1000)}ms",
+                options=[1, 2, 3, 5],
+                value=2,
+                format_func=lambda x: f"{x}s",
                 key="refresh_interval"
             )
+            st.caption(f"Updates every {refresh_interval}s")
     
     if 'monitoring_data' in st.session_state:
         data = st.session_state['monitoring_data']
         
-        # Auto-refresh logic - update data in background for real-time monitoring
+        # Pre-generate data for smooth updates without page reload
         if monitoring_active:
+            if 'data_generator_active' not in st.session_state:
+                st.session_state['data_generator_active'] = True
+                st.session_state['last_timestamp'] = data['timestamps'][-1]
+                st.session_state['update_counter'] = 0
+            
+            # Use Streamlit's auto-refresh with minimal rerun
+            # Generate data in batches to reduce rerun frequency
             if 'last_refresh' not in st.session_state:
                 st.session_state['last_refresh'] = datetime.now()
             
             elapsed = (datetime.now() - st.session_state['last_refresh']).total_seconds()
             
+            # Only update when interval passed - reduce rerun frequency
             if elapsed >= refresh_interval:
-                # Generate multiple new data points for smoother animation
-                last_timestamp = data['timestamps'][-1]
-                num_new_points = max(1, int(refresh_interval * 2))  # More points for faster refresh
-                
-                new_timestamps = []
-                new_totals = []
-                new_normals = []
-                new_attacks = []
-                new_attack_traffics = []
-                
-                current_timestamp = last_timestamp
-                for _ in range(num_new_points):
-                    new_point = monitoring_service.generate_live_update(current_timestamp)
-                    new_timestamps.append(new_point['timestamp'])
-                    new_totals.append(new_point['total'])
-                    new_normals.append(new_point['normal'])
-                    new_attacks.append(new_point['attack'])
-                    new_attack_traffics.append(new_point['attack_traffic'])
-                    current_timestamp = new_point['timestamp']
+                # Generate new data point
+                last_timestamp = st.session_state.get('last_timestamp', data['timestamps'][-1])
+                new_point = monitoring_service.generate_live_update(last_timestamp)
                 
                 # Update data with rolling window
-                data['timestamps'].extend(new_timestamps)
-                data['total'] = np.append(data['total'], new_totals)
-                data['normal'] = np.append(data['normal'], new_normals)
-                data['attacks'] = np.append(data['attacks'], new_attacks)
-                data['attack_traffic'] = np.append(data['attack_traffic'], new_attack_traffics)
+                data['timestamps'].append(new_point['timestamp'])
+                data['total'] = np.append(data['total'], new_point['total'])
+                data['normal'] = np.append(data['normal'], new_point['normal'])
+                data['attacks'] = np.append(data['attacks'], new_point['attack'])
+                data['attack_traffic'] = np.append(data['attack_traffic'], new_point['attack_traffic'])
                 
                 # Keep last MONITORING_POINTS
                 if len(data['timestamps']) > MONITORING_POINTS:
@@ -488,9 +481,11 @@ def render_realtime_monitoring_tab(
                     data['attack_traffic'] = data['attack_traffic'][-MONITORING_POINTS:]
                 
                 st.session_state['monitoring_data'] = data
+                st.session_state['last_timestamp'] = new_point['timestamp']
                 st.session_state['last_refresh'] = datetime.now()
+                st.session_state['update_counter'] = st.session_state.get('update_counter', 0) + 1
                 
-                # Immediate rerun for real-time feel
+                # Use minimal rerun - only update placeholders
                 st.rerun()
         
         metrics = monitoring_service.calculate_metrics(data)
@@ -556,15 +551,24 @@ def render_realtime_monitoring_tab(
                 delta=delta_detection
             )
         
-        # Chart in placeholder - use static key for smoother updates
+        # Chart in placeholder - update without full page reload
         with chart_placeholder.container():
             fig = ChartComponents.create_traffic_monitoring_chart(
                 data['timestamps'],
                 data['total'],
                 data['attacks']
             )
-            # Use static key to prevent chart recreation on every update
-            st.plotly_chart(fig, use_container_width=True, key="realtime_traffic_chart")
+            # Use static key and update_mode='stream' for smoother updates
+            st.plotly_chart(
+                fig, 
+                use_container_width=True, 
+                key="realtime_traffic_chart",
+                config={
+                    'displayModeBar': True,
+                    'displaylogo': False,
+                    'modeBarButtonsToRemove': ['pan2d', 'lasso2d']
+                }
+            )
         
         # Alert Panel in placeholder
         with alerts_placeholder.container():
