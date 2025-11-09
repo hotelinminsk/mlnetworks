@@ -401,7 +401,8 @@ def render_realtime_monitoring_tab(
     
     monitoring_service = MonitoringService()
     
-    col1, col2 = st.columns([2, 1])
+    # Controls
+    col1, col2, col3 = st.columns([2, 1, 1])
     
     with col1:
         if st.button("Yeni Monitoring Başlat", key="monitoring", type="primary"):
@@ -412,55 +413,86 @@ def render_realtime_monitoring_tab(
             )
             st.session_state['monitoring_data'] = data
             st.session_state['monitoring_start_time'] = datetime.now()
+            st.session_state['monitoring_active'] = True
+            st.session_state['last_refresh'] = datetime.now()
+    
+    # Auto-refresh is always enabled when monitoring is active
+    monitoring_active = st.session_state.get('monitoring_active', False)
     
     with col2:
-        auto_refresh = st.checkbox("Auto-Refresh", value=False, key="auto_refresh")
-        if auto_refresh:
-            refresh_interval = st.slider(
-                "Refresh (sn):",
-                REFRESH_INTERVAL_MIN,
-                REFRESH_INTERVAL_MAX,
-                DEFAULT_REFRESH_INTERVAL,
+        if monitoring_active:
+            # Pause/Resume toggle
+            is_paused = st.toggle("⏸️ Pause", value=False, key="pause_monitoring")
+            if is_paused:
+                st.session_state['monitoring_active'] = False
+        else:
+            if st.session_state.get('monitoring_data') is not None:
+                if st.button("▶️ Resume", key="resume_monitoring"):
+                    st.session_state['monitoring_active'] = True
+                    st.session_state['last_refresh'] = datetime.now()
+    
+    with col3:
+        if monitoring_active:
+            refresh_interval = st.select_slider(
+                "Refresh:",
+                options=[1, 2, 3, 5],
+                value=2,
+                format_func=lambda x: f"{x}s",
                 key="refresh_interval"
             )
-            st.info(f"Her {refresh_interval} saniyede yenilenecek")
-            
-            # Auto-refresh için Streamlit'in rerun özelliğini kullan
+    
+    if 'monitoring_data' in st.session_state:
+        data = st.session_state['monitoring_data']
+        
+        # Auto-refresh logic - update data in background
+        if monitoring_active:
             if 'last_refresh' not in st.session_state:
                 st.session_state['last_refresh'] = datetime.now()
             
             elapsed = (datetime.now() - st.session_state['last_refresh']).total_seconds()
+            
             if elapsed >= refresh_interval:
-                # Yeni veri noktası ekle
-                if 'monitoring_data' in st.session_state:
-                    data = st.session_state['monitoring_data']
-                    last_timestamp = data['timestamps'][-1]
-                    new_point = monitoring_service.generate_live_update(last_timestamp)
-                    
-                    # Veriyi güncelle (son 100 noktayı tut)
-                    data['timestamps'].append(new_point['timestamp'])
-                    data['total'] = np.append(data['total'], new_point['total'])
-                    data['normal'] = np.append(data['normal'], new_point['normal'])
-                    data['attacks'] = np.append(data['attacks'], new_point['attack'])
-                    data['attack_traffic'] = np.append(data['attack_traffic'], new_point['attack_traffic'])
-                    
-                    # Son 100 noktayı tut
-                    if len(data['timestamps']) > MONITORING_POINTS:
-                        data['timestamps'] = data['timestamps'][-MONITORING_POINTS:]
-                        data['total'] = data['total'][-MONITORING_POINTS:]
-                        data['normal'] = data['normal'][-MONITORING_POINTS:]
-                        data['attacks'] = data['attacks'][-MONITORING_POINTS:]
-                        data['attack_traffic'] = data['attack_traffic'][-MONITORING_POINTS:]
-                    
-                    st.session_state['monitoring_data'] = data
-                    st.session_state['last_refresh'] = datetime.now()
-                    st.rerun()
-    
-    if 'monitoring_data' in st.session_state:
-        data = st.session_state['monitoring_data']
+                # Generate new data point
+                last_timestamp = data['timestamps'][-1]
+                new_point = monitoring_service.generate_live_update(last_timestamp)
+                
+                # Update data with rolling window
+                data['timestamps'].append(new_point['timestamp'])
+                data['total'] = np.append(data['total'], new_point['total'])
+                data['normal'] = np.append(data['normal'], new_point['normal'])
+                data['attacks'] = np.append(data['attacks'], new_point['attack'])
+                data['attack_traffic'] = np.append(data['attack_traffic'], new_point['attack_traffic'])
+                
+                # Keep last MONITORING_POINTS
+                if len(data['timestamps']) > MONITORING_POINTS:
+                    data['timestamps'] = data['timestamps'][-MONITORING_POINTS:]
+                    data['total'] = data['total'][-MONITORING_POINTS:]
+                    data['normal'] = data['normal'][-MONITORING_POINTS:]
+                    data['attacks'] = data['attacks'][-MONITORING_POINTS:]
+                    data['attack_traffic'] = data['attack_traffic'][-MONITORING_POINTS:]
+                
+                st.session_state['monitoring_data'] = data
+                st.session_state['last_refresh'] = datetime.now()
+                
+                # Sleep briefly then rerun for smooth update
+                time.sleep(0.1)
+                st.rerun()
+        
         metrics = monitoring_service.calculate_metrics(data)
         
         st.markdown("---")
+        
+        # Status indicator
+        if monitoring_active:
+            st.markdown(
+                f'<div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(16,185,129,0.1);border-radius:6px;margin-bottom:15px;">'
+                f'<div style="width:8px;height:8px;background:#10b981;border-radius:50%;animation:pulse 2s infinite;"></div>'
+                f'<span style="color:#10b981;font-weight:600;">● Live Monitoring Active</span>'
+                f'<span style="color:#64748b;margin-left:auto;">Next update in {int(refresh_interval - elapsed)}s</span>'
+                f'</div>'
+                f'<style>@keyframes pulse {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.5; }} }}</style>',
+                unsafe_allow_html=True
+            )
         
         # Create placeholders for dynamic content
         metrics_placeholder = st.empty()
@@ -553,7 +585,14 @@ def render_realtime_monitoring_tab(
                     else:
                         st.error(f"{threat_level}\n\n{threat_percentage}%")
     else:
-        st.info("'Yeni Monitoring Başlat' butonuna basın!")
+        st.markdown("""
+        <div style="text-align:center;padding:60px 20px;background:rgba(99,102,241,0.05);border-radius:10px;border:2px dashed rgba(99,102,241,0.3);">
+            <i data-lucide="activity" style="width:64px;height:64px;color:#6366f1;margin-bottom:20px;"></i>
+            <h3 style="color:#0f172a;margin-bottom:10px;">Real-Time Monitoring</h3>
+            <p style="color:#64748b;margin-bottom:20px;">Start monitoring to see live network traffic and attack detection</p>
+            <p style="color:#8b5cf6;">👆 Click 'Yeni Monitoring Başlat' button above</p>
+        </div>
+        """, unsafe_allow_html=True)
 
 
 def main():
