@@ -84,3 +84,23 @@ COLOR_ATTACK = "red"
 COLOR_GRADIENT_1 = "#667eea"
 COLOR_GRADIENT_2 = "#764ba2"
 
+MODERN_COLORS = {
+    'success': '#10b981',
+    'danger': '#ef4444',
+    'warning': '#f59e0b',
+    'info': '#3b82f6',
+    'light': '#f8fafc',
+    'dark': '#1e293b',
+    'gradient_start': '#667eea',
+    'gradient_end': '#764ba2',
+    'normal_traffic': '#10b981',
+    'attack_traffic': '#ef4444',
+    'background': '#f8fafc',
+    'grid': '#e2e8f0',
+    'plot_bg': 'rgba(241, 245, 249, 0.6)',
+    'title_color': '#1e293b',
+    'label_color': '#64748b'
+}
+
+# Animation settings
+
