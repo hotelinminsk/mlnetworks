@@ -200,7 +200,7 @@ class ChartComponents:
                 borderwidth=1,
                 borderpad=4
             ),
-            annotation_position="top right"
+            annotation_text=f"<b>Eşik: {threshold:.3f}</b>"
         )
         
         # Modern layout
@@ -286,15 +286,14 @@ class ChartComponents:
                 color=MODERN_COLORS['warning'],
                 width=2.5
             ),
+            annotation_text=f"<b>Threshold: {TRAFFIC_THRESHOLD}</b>",
             annotation=dict(
-                text=f"<b>Threshold: {TRAFFIC_THRESHOLD}</b>",
                 textposition="right",
                 font=dict(size=11, color=MODERN_COLORS['warning']),
                 bgcolor='rgba(255,255,255,0.9)',
                 bordercolor=MODERN_COLORS['warning'],
                 borderwidth=1
             ),
-            annotation_position="right",
             row=1, col=1
         )
         
