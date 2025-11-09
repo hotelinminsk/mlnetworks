@@ -54,3 +54,4 @@ class RealtimeMetricsComponent:
         with col4:
             st.metric("Ortalama Trafik", f"{int(metrics['avg_traffic'])}")
 
+

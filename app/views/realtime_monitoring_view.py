@@ -92,3 +92,4 @@ class RealtimeMonitoringView:
         # Alerts
         self.alerts_component.render(monitoring_df)
 
+

@@ -38,3 +38,4 @@ class RealtimeAlertsComponent:
                 f"Traffic: {int(row['total_traffic'])} pkt/s"
             )
 
+

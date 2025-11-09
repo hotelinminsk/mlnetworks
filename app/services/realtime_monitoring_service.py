@@ -145,3 +145,4 @@ class RealtimeMonitoringService:
         """Monitoring aktif mi?"""
         return st.session_state.get('monitoring_active', True)
 
+

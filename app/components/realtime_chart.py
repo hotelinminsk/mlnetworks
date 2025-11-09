@@ -98,3 +98,4 @@ class RealtimeChartComponent:
         
         return chart
 
+
