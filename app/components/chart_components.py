@@ -210,19 +210,15 @@ class ChartComponents:
                 xanchor='center'
             ),
             xaxis=dict(
-                title=dict(
-                    text="Saldırı Olasılığı",
-                    font=dict(size=14, color='#64748b')
-                ),
+                title="Saldırı Olasılığı",
+                titlefont=dict(size=14, color='#64748b'),
                 gridcolor=MODERN_COLORS['grid'],
                 gridwidth=1,
                 zeroline=False
             ),
             yaxis=dict(
-                title=dict(
-                    text="Örnek Sayısı",
-                    font=dict(size=14, color='#64748b')
-                ),
+                title="Örnek Sayısı",
+                titlefont=dict(size=14, color='#64748b'),
                 gridcolor=MODERN_COLORS['grid'],
                 gridwidth=1,
                 zeroline=False
@@ -325,10 +321,8 @@ class ChartComponents:
         
         # Axis updates - modern stil
         fig.update_xaxes(
-            title_text=dict(
-                text="<b>Time</b>",
-                font=dict(size=13, color='#64748b')
-            ),
+            title="<b>Time</b>",
+            title_font=dict(size=13, color='#64748b'),
             gridcolor=MODERN_COLORS['grid'],
             gridwidth=1,
             showgrid=True,
@@ -336,10 +330,8 @@ class ChartComponents:
         )
         
         fig.update_yaxes(
-            title_text=dict(
-                text="<b>Packets/sec</b>",
-                font=dict(size=13, color='#64748b')
-            ),
+            title="<b>Packets/sec</b>",
+            title_font=dict(size=13, color='#64748b'),
             gridcolor=MODERN_COLORS['grid'],
             gridwidth=1,
             showgrid=True,
@@ -348,10 +340,8 @@ class ChartComponents:
         )
         
         fig.update_yaxes(
-            title_text=dict(
-                text="<b>Events</b>",
-                font=dict(size=13, color='#64748b')
-            ),
+            title="<b>Events</b>",
+            title_font=dict(size=13, color='#64748b'),
             range=[0, 1.5],
             gridcolor=MODERN_COLORS['grid'],
             gridwidth=1,
@@ -422,19 +412,15 @@ class ChartComponents:
                 xanchor='center'
             ),
             xaxis=dict(
-                title=dict(
-                    text="False Positive Rate",
-                    font=dict(size=14, color='#64748b')
-                ),
+                title="False Positive Rate",
+                titlefont=dict(size=14, color='#64748b'),
                 range=[0, 1],
                 gridcolor=MODERN_COLORS['grid'],
                 gridwidth=1
             ),
             yaxis=dict(
-                title=dict(
-                    text="True Positive Rate",
-                    font=dict(size=14, color='#64748b')
-                ),
+                title="True Positive Rate",
+                titlefont=dict(size=14, color='#64748b'),
                 range=[0, 1],
                 gridcolor=MODERN_COLORS['grid'],
                 gridwidth=1
@@ -489,17 +475,13 @@ class ChartComponents:
                 xanchor='center'
             ),
             xaxis=dict(
-                title=dict(
-                    text="<b>Tahmin Edilen</b>",
-                    font=dict(size=14, color='#64748b')
-                ),
+                title="<b>Tahmin Edilen</b>",
+                titlefont=dict(size=14, color='#64748b'),
                 gridcolor=MODERN_COLORS['grid']
             ),
             yaxis=dict(
-                title=dict(
-                    text="<b>Gerçek</b>",
-                    font=dict(size=14, color='#64748b')
-                ),
+                title="<b>Gerçek</b>",
+                titlefont=dict(size=14, color='#64748b'),
                 gridcolor=MODERN_COLORS['grid']
             ),
             height=450,
