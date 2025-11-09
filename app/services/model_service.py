@@ -69,43 +69,42 @@ class ModelService:
         # Isolation Forest için özel işlem
         if model_name == "Isolation Forest":
             try:
-                # Verbose'u kapat ve batch processing yap
                 import warnings
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
-                    # Küçük batch'lerde işle
-                    batch_size = 10000
-                    scores_list = []
                     
-                    for i in range(0, len(X), batch_size):
-                        batch = X.iloc[i:i+batch_size]
-                        batch_scores = -model.decision_function(batch)
-                        scores_list.append(batch_scores)
+                    # n_jobs=1 ile parallelization sorununu önle
+                    original_n_jobs = getattr(model, 'n_jobs', None)
+                    if hasattr(model, 'n_jobs'):
+                        model.n_jobs = 1
                     
-                    scores = np.concatenate(scores_list)
+                    try:
+                        # score_samples kullan (daha güvenli)
+                        scores = -model.score_samples(X)
+                    finally:
+                        # Orijinal n_jobs'u geri yükle
+                        if original_n_jobs is not None and hasattr(model, 'n_jobs'):
+                            model.n_jobs = original_n_jobs
                     
-                # Normalize to [0, 1]
-                scores_min = scores.min()
-                scores_max = scores.max()
-                if scores_max - scores_min > 1e-10:
-                    scores = (scores - scores_min) / (scores_max - scores_min)
-                else:
-                    scores = np.zeros_like(scores)
-                
-                return scores
-            except Exception as e:
-                # Fallback: score_samples kullan
-                try:
-                    scores = -model.score_samples(X)
+                    # Normalize to [0, 1]
                     scores_min = scores.min()
                     scores_max = scores.max()
                     if scores_max - scores_min > 1e-10:
                         scores = (scores - scores_min) / (scores_max - scores_min)
                     else:
                         scores = np.zeros_like(scores)
+                    
                     return scores
-                except Exception:
-                    raise ValueError(f"Error predicting with Isolation Forest: {e}")
+                    
+            except Exception as e:
+                # Fallback: predict kullan ve binary'yi probability'ye çevir
+                try:
+                    predictions = model.predict(X)
+                    # -1 (anomaly) -> 1.0, 1 (normal) -> 0.0
+                    scores = np.where(predictions == -1, 1.0, 0.0)
+                    return scores
+                except Exception as inner_e:
+                    raise ValueError(f"Error predicting with Isolation Forest: {e}. Fallback also failed: {inner_e}")
         else:
             # Diğer modeller için predict_proba
             if hasattr(model, 'predict_proba'):

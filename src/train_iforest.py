@@ -21,8 +21,8 @@ def main():
         max_samples=2048,
         contamination='auto',
         random_state=RANDOM_STATE,
-        n_jobs=-1,
-        verbose=1,
+        n_jobs=1,  # Parallelization sorununu önlemek için 1
+        verbose=0,  # Verbose kapalı
     )
 
     clf.fit(X_benign)
