@@ -556,10 +556,9 @@ def render_realtime_monitoring_tab(
                 st.session_state['last_refresh'] = datetime.now()
                 st.session_state['update_counter'] = st.session_state.get('update_counter', 0) + 1
                 
-                # DON'T rerun - let JavaScript handle the update
-                # Only rerun if we need to update metrics (less frequently)
-                if st.session_state['update_counter'] % 5 == 0:  # Update metrics every 5 data points
-                    st.rerun()
+                # Update chart immediately for real-time feel
+                # Use minimal rerun - only update chart placeholder
+                st.rerun()
         
         metrics = monitoring_service.calculate_metrics(data)
         
@@ -648,149 +647,13 @@ def render_realtime_monitoring_tab(
                 }
             )
             
-            # JavaScript for true client-side updates (trading chart style - NO page reload)
+            # Simplified approach: Use Streamlit's built-in update mechanism
+            # Since Streamlit requires rerun for updates, we'll use minimal rerun
+            # The chart will update smoothly with static key
             if monitoring_active:
-                # Get pending updates from session state
-                pending_updates = st.session_state.get('pending_updates', [])
-                pending_updates_json = json.dumps(pending_updates) if pending_updates else "[]"
-                
-                # Clear pending updates after sending to client
-                if pending_updates:
-                    st.session_state['pending_updates'] = []
-                
-                st.markdown(f"""
-                <script>
-                (function() {{
-                    const UPDATE_INTERVAL = {int(refresh_interval * 1000)};
-                    let updateCounter = 0;
-                    let pendingUpdates = {pending_updates_json};
-                    
-                    function findPlotlyChart() {{
-                        // Find Plotly chart in iframe
-                        const iframe = document.querySelector('[data-testid="stPlotlyChart"] iframe');
-                        if (iframe && iframe.contentWindow) {{
-                            try {{
-                                const plotlyDiv = iframe.contentDocument.querySelector('.js-plotly-plot');
-                                if (plotlyDiv && plotlyDiv.data) {{
-                                    return iframe.contentWindow.Plotly;
-                                }}
-                            }} catch(e) {{
-                                // Cross-origin issue, try direct access
-                            }}
-                        }}
-                        
-                        // Try direct access
-                        const plotlyDiv = document.querySelector('.js-plotly-plot');
-                        if (plotlyDiv && window.Plotly) {{
-                            return window.Plotly;
-                        }}
-                        
-                        return null;
-                    }}
-                    
-                    function updateChartClientSide() {{
-                        const Plotly = findPlotlyChart();
-                        if (!Plotly || pendingUpdates.length === 0) return;
-                        
-                        // Get chart element
-                        const chartDiv = document.querySelector('.js-plotly-plot') || 
-                                       document.querySelector('[data-testid="stPlotlyChart"] .js-plotly-plot');
-                        if (!chartDiv) return;
-                        
-                        // Process pending updates
-                        pendingUpdates.forEach(update => {{
-                            // Extend traces with new data point
-                            const newTimestamp = new Date(update.timestamp);
-                            const newTotal = update.total;
-                            const newAttack = update.attack;
-                            
-                            // Extend traffic trace
-                            Plotly.extendTraces(chartDiv, {{
-                                x: [[newTimestamp]],
-                                y: [[newTotal]]
-                            }}, [0]); // First trace (traffic)
-                            
-                            // If attack, add attack marker
-                            if (newAttack === 1) {{
-                                Plotly.extendTraces(chartDiv, {{
-                                    x: [[newTimestamp]],
-                                    y: [[newTotal]]
-                                }}, [1]); // Second trace (attacks)
-                            }}
-                            
-                            // Remove old points to keep window size
-                            const maxPoints = {MONITORING_POINTS};
-                            Plotly.relayout(chartDiv, {{
-                                'xaxis.range': [
-                                    new Date(newTimestamp.getTime() - maxPoints * 60000),
-                                    newTimestamp
-                                ]
-                            }});
-                        }});
-                        
-                        pendingUpdates = []; // Clear processed updates
-                    }}
-                    
-                    // Set up auto-refresh for fetching new data
-                    function startAutoRefresh() {{
-                        const refreshInterval = setInterval(() => {{
-                            // Fetch new data from Streamlit (via hidden element or API)
-                            // For now, we'll trigger a minimal update
-                            const event = new CustomEvent('streamlit:update');
-                            window.dispatchEvent(event);
-                        }}, UPDATE_INTERVAL);
-                        
-                        return refreshInterval;
-                    }}
-                    
-                    // Set up countdown
-                    function updateCountdown() {{
-                        const countdownEl = document.getElementById('refresh-countdown');
-                        if (countdownEl) {{
-                            let remaining = UPDATE_INTERVAL / 1000;
-                            const countdown = setInterval(() => {{
-                                remaining -= 0.1;
-                                if (remaining <= 0) {{
-                                    remaining = UPDATE_INTERVAL / 1000;
-                                    updateCounter++;
-                                    // Process pending updates
-                                    updateChartClientSide();
-                                }}
-                                if (countdownEl) {{
-                                    countdownEl.textContent = remaining.toFixed(1) + 's';
-                                }}
-                            }}, 100);
-                        }}
-                    }}
-                    
-                    // Initialize when chart is ready
-                    function initChartUpdates() {{
-                        // Wait for Plotly to be ready
-                        const checkPlotly = setInterval(() => {{
-                            if (findPlotlyChart()) {{
-                                clearInterval(checkPlotly);
-                                updateChartClientSide(); // Process any pending updates
-                                updateCountdown();
-                                startAutoRefresh();
-                            }}
-                        }}, 100);
-                        
-                        // Timeout after 5 seconds
-                        setTimeout(() => clearInterval(checkPlotly), 5000);
-                    }}
-                    
-                    // Initialize on page load
-                    if (document.readyState === 'loading') {{
-                        document.addEventListener('DOMContentLoaded', initChartUpdates);
-                    }} else {{
-                        initChartUpdates();
-                    }}
-                    
-                    // Re-initialize on Streamlit rerun (but don't reload page)
-                    window.addEventListener('load', initChartUpdates);
-                }})();
-                </script>
-                """, unsafe_allow_html=True)
+                # Show update status
+                update_count = st.session_state.get('update_counter', 0)
+                st.caption(f"📊 Chart updated {update_count} times | Using pre-generated data")
         
         # Alert Panel in placeholder
         with alerts_placeholder.container():
