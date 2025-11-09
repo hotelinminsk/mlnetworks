@@ -193,7 +193,6 @@ class ChartComponents:
             ),
             annotation_text=f"<b>Eşik: {threshold:.3f}</b>",
             annotation=dict(
-                textposition="top right",
                 font=dict(size=12, color='#1e293b'),
                 bgcolor='rgba(255,255,255,0.9)',
                 bordercolor='#e2e8f0',
@@ -287,7 +286,6 @@ class ChartComponents:
             ),
             annotation_text=f"<b>Threshold: {TRAFFIC_THRESHOLD}</b>",
             annotation=dict(
-                textposition="right",
                 font=dict(size=11, color=MODERN_COLORS['warning']),
                 bgcolor='rgba(255,255,255,0.9)',
                 bordercolor=MODERN_COLORS['warning'],
