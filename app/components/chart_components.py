@@ -27,7 +27,7 @@ MODERN_LAYOUT = {
         'size': 13,
         'color': MODERN_COLORS['label_color']
     },
-    'plot_bgcolor': 'rgba(248, 250, 252, 0.5)',
+    'plot_bgcolor': 'rgba(0,0,0,0)',
     'paper_bgcolor': 'rgba(0,0,0,0)',
     'hovermode': 'x unified',
     'showlegend': True,
