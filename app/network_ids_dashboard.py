@@ -102,9 +102,14 @@ def render_performance_metrics(
     """Performans metriklerini render et"""
     st.markdown("### 📊 Sistem Performansı")
     
-    # Get model predictions
-    y_proba = model_service.predict_proba(model_name, X_test)
-    y_pred = model_service.predict(model_name, X_test, threshold)
+    # Get model predictions with error handling
+    try:
+        y_proba = model_service.predict_proba(model_name, X_test)
+        y_pred = model_service.predict(model_name, X_test, threshold)
+    except Exception as e:
+        st.error(f"❌ Model tahmin hatası: {str(e)}")
+        st.info("Lütfen farklı bir model seçin veya modelleri yeniden eğitin.")
+        return
     
     # Calculate metrics
     metrics = MetricsService.calculate_all_metrics(y_test, y_pred, y_proba)

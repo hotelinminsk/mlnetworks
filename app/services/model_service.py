@@ -68,10 +68,44 @@ class ModelService:
         
         # Isolation Forest için özel işlem
         if model_name == "Isolation Forest":
-            scores = -model.decision_function(X)
-            # Normalize to [0, 1]
-            scores = (scores - scores.min()) / (scores.max() - scores.min() + 1e-10)
-            return scores
+            try:
+                # Verbose'u kapat ve batch processing yap
+                import warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    # Küçük batch'lerde işle
+                    batch_size = 10000
+                    scores_list = []
+                    
+                    for i in range(0, len(X), batch_size):
+                        batch = X.iloc[i:i+batch_size]
+                        batch_scores = -model.decision_function(batch)
+                        scores_list.append(batch_scores)
+                    
+                    scores = np.concatenate(scores_list)
+                    
+                # Normalize to [0, 1]
+                scores_min = scores.min()
+                scores_max = scores.max()
+                if scores_max - scores_min > 1e-10:
+                    scores = (scores - scores_min) / (scores_max - scores_min)
+                else:
+                    scores = np.zeros_like(scores)
+                
+                return scores
+            except Exception as e:
+                # Fallback: score_samples kullan
+                try:
+                    scores = -model.score_samples(X)
+                    scores_min = scores.min()
+                    scores_max = scores.max()
+                    if scores_max - scores_min > 1e-10:
+                        scores = (scores - scores_min) / (scores_max - scores_min)
+                    else:
+                        scores = np.zeros_like(scores)
+                    return scores
+                except Exception:
+                    raise ValueError(f"Error predicting with Isolation Forest: {e}")
         else:
             # Diğer modeller için predict_proba
             if hasattr(model, 'predict_proba'):
