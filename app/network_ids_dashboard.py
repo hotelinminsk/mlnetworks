@@ -448,21 +448,21 @@ def render_realtime_monitoring_tab(
     if 'monitoring_data' in st.session_state:
         data = st.session_state['monitoring_data']
         
-        # Pre-generated data approach - smooth updates without page reload
+        # Pre-generated data approach with automatic updates
         if monitoring_active:
             if 'data_generator_active' not in st.session_state:
                 st.session_state['data_generator_active'] = True
                 st.session_state['update_counter'] = 0
                 st.session_state['last_refresh'] = datetime.now()
-                st.session_state['pending_updates'] = []  # Queue for new data points
                 
                 # Initialize current index if not exists
                 if 'current_index' not in st.session_state:
                     st.session_state['current_index'] = len(data.get('timestamps', []))
             
+            # Use Streamlit's auto-refresh for smooth updates
             elapsed = (datetime.now() - st.session_state['last_refresh']).total_seconds()
             
-            # Use pre-generated data - just move the pointer forward
+            # Update data when interval passed
             if elapsed >= refresh_interval:
                 current_index = st.session_state.get('current_index', len(data['timestamps']))
                 
@@ -471,22 +471,13 @@ def render_realtime_monitoring_tab(
                     # Get next data point from pre-generated data
                     next_index = current_index
                     timestamp = data['full_timestamps'][next_index]
-                    new_point = {
-                        'timestamp': timestamp.isoformat() if isinstance(timestamp, datetime) else str(timestamp),
-                        'total': float(data['full_total'][next_index]),
-                        'attack': int(data['full_attacks'][next_index]),
-                        'attack_traffic': float(data['full_attack_traffic'][next_index])
-                    }
-                    
-                    # Queue the update (will be applied client-side)
-                    st.session_state['pending_updates'].append(new_point)
                     
                     # Update displayed data with rolling window
-                    data['timestamps'].append(new_point['timestamp'])
-                    data['total'] = np.append(data['total'], new_point['total'])
+                    data['timestamps'].append(timestamp)
+                    data['total'] = np.append(data['total'], data['full_total'][next_index])
                     data['normal'] = np.append(data['normal'], data['full_normal'][next_index])
-                    data['attacks'] = np.append(data['attacks'], new_point['attack'])
-                    data['attack_traffic'] = np.append(data['attack_traffic'], new_point['attack_traffic'])
+                    data['attacks'] = np.append(data['attacks'], data['full_attacks'][next_index])
+                    data['attack_traffic'] = np.append(data['attack_traffic'], data['full_attack_traffic'][next_index])
                     
                     # Keep last MONITORING_POINTS
                     if len(data['timestamps']) > MONITORING_POINTS:
@@ -556,8 +547,13 @@ def render_realtime_monitoring_tab(
                 st.session_state['last_refresh'] = datetime.now()
                 st.session_state['update_counter'] = st.session_state.get('update_counter', 0) + 1
                 
-                # Update chart immediately for real-time feel
-                # Use minimal rerun - only update chart placeholder
+                # Use Streamlit's auto-refresh for smooth updates
+                time.sleep(0.1)  # Small delay for smooth transition
+                st.rerun()
+            
+            # Auto-refresh using Streamlit's interval (for continuous updates)
+            if monitoring_active:
+                time.sleep(refresh_interval)
                 st.rerun()
         
         metrics = monitoring_service.calculate_metrics(data)
