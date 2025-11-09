@@ -258,13 +258,6 @@ def render_live_demo_tab(
     threshold: float
 ) -> None:
     """Canlı demo tab'ını render et"""
-    # Tab header with Lucide icon
-    st.markdown("""
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:15px;background:linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.1) 100%);border-radius:10px;border-left:4px solid #6366f1;">
-        <i data-lucide="play-circle" style="width:32px;height:32px;color:#6366f1;"></i>
-        <span style="font-size:1.8rem;font-weight:600;color:#0f172a;">İnteraktif Tahmin Demo</span>
-    </div>
-    """, unsafe_allow_html=True)
     
     col1, col2 = st.columns([1, 1])
     
@@ -405,13 +398,6 @@ def render_realtime_monitoring_tab(
     threshold: float
 ) -> None:
     """Real-time monitoring tab'ını render et"""
-    # Tab header with Lucide icon
-    st.markdown("""
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:15px;background:linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(220,38,38,0.1) 100%);border-radius:10px;border-left:4px solid #ef4444;">
-        <i data-lucide="activity" style="width:32px;height:32px;color:#ef4444;"></i>
-        <span style="font-size:1.8rem;font-weight:600;color:#0f172a;">Real-Time Monitoring & Alert System</span>
-    </div>
-    """, unsafe_allow_html=True)
     
     monitoring_service = MonitoringService()
     
@@ -605,42 +591,18 @@ def main():
         
         # TAB 3: Model Comparison
         with tab3:
-            st.markdown("""
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:15px;background:linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.1) 100%);border-radius:10px;border-left:4px solid #10b981;">
-                <i data-lucide="trophy" style="width:32px;height:32px;color:#10b981;"></i>
-                <span style="font-size:1.8rem;font-weight:600;color:#0f172a;">Model Karşılaştırma</span>
-            </div>
-            """, unsafe_allow_html=True)
             st.info("Implementation in progress")
         
         # TAB 4: Attack Analysis
         with tab4:
-            st.markdown("""
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:15px;background:linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(217,119,6,0.1) 100%);border-radius:10px;border-left:4px solid #f59e0b;">
-                <i data-lucide="search" style="width:32px;height:32px;color:#f59e0b;"></i>
-                <span style="font-size:1.8rem;font-weight:600;color:#0f172a;">Saldırı Analizi</span>
-            </div>
-            """, unsafe_allow_html=True)
             st.info("Implementation in progress")
         
         # TAB 5: Performance Details
         with tab5:
-            st.markdown("""
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:15px;background:linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.1) 100%);border-radius:10px;border-left:4px solid #3b82f6;">
-                <i data-lucide="bar-chart-2" style="width:32px;height:32px;color:#3b82f6;"></i>
-                <span style="font-size:1.8rem;font-weight:600;color:#0f172a;">Performans Detayları</span>
-            </div>
-            """, unsafe_allow_html=True)
             st.info("Implementation in progress")
         
         # TAB 6: Feature Importance
         with tab6:
-            st.markdown("""
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:15px;background:linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(124,58,237,0.1) 100%);border-radius:10px;border-left:4px solid #8b5cf6;">
-                <i data-lucide="brain" style="width:32px;height:32px;color:#8b5cf6;"></i>
-                <span style="font-size:1.8rem;font-weight:600;color:#0f172a;">Feature Importance</span>
-            </div>
-            """, unsafe_allow_html=True)
             st.info("Implementation in progress")
     
     except Exception as e:
