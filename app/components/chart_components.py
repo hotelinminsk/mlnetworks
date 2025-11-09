@@ -191,16 +191,15 @@ class ChartComponents:
                 color='#1e293b',
                 width=3
             ),
+            annotation_text=f"<b>Eşik: {threshold:.3f}</b>",
             annotation=dict(
-                text=f"<b>Eşik: {threshold:.3f}</b>",
                 textposition="top right",
                 font=dict(size=12, color='#1e293b'),
                 bgcolor='rgba(255,255,255,0.9)',
                 bordercolor='#e2e8f0',
                 borderwidth=1,
                 borderpad=4
-            ),
-            annotation_text=f"<b>Eşik: {threshold:.3f}</b>"
+            )
         )
         
         # Modern layout
