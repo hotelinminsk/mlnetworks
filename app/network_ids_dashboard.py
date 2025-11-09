@@ -407,15 +407,17 @@ def render_realtime_monitoring_tab(
     
     with col1:
         if st.button("Yeni Monitoring Başlat", key="monitoring", type="primary"):
-            # Generate time series
+            # Generate time series with pre-generated data (1000 points for smooth updates)
             data = monitoring_service.generate_traffic_data(
                 n_points=MONITORING_POINTS,
-                attack_probability=0.15
+                attack_probability=0.15,
+                pre_generate=1000  # Önceden 1000 nokta üret
             )
             st.session_state['monitoring_data'] = data
             st.session_state['monitoring_start_time'] = datetime.now()
             st.session_state['monitoring_active'] = True
             st.session_state['last_refresh'] = datetime.now()
+            st.session_state['current_index'] = MONITORING_POINTS  # İlk gösterilen nokta
     
     # Auto-refresh is always enabled when monitoring is active
     monitoring_active = st.session_state.get('monitoring_active', False)
@@ -446,48 +448,61 @@ def render_realtime_monitoring_tab(
     if 'monitoring_data' in st.session_state:
         data = st.session_state['monitoring_data']
         
-        # Pre-generate data for client-side updates (no page reload)
+        # Pre-generated data approach - smooth updates without page reload
         if monitoring_active:
             if 'data_generator_active' not in st.session_state:
                 st.session_state['data_generator_active'] = True
-                st.session_state['last_timestamp'] = data['timestamps'][-1]
                 st.session_state['update_counter'] = 0
                 st.session_state['last_refresh'] = datetime.now()
                 st.session_state['pending_updates'] = []  # Queue for new data points
+                
+                # Initialize current index if not exists
+                if 'current_index' not in st.session_state:
+                    st.session_state['current_index'] = len(data.get('timestamps', []))
             
             elapsed = (datetime.now() - st.session_state['last_refresh']).total_seconds()
             
-            # Generate new data points and queue them for client-side update
+            # Use pre-generated data - just move the pointer forward
             if elapsed >= refresh_interval:
-                # Generate new data point
-                last_timestamp = st.session_state.get('last_timestamp', data['timestamps'][-1])
-                new_point = monitoring_service.generate_live_update(last_timestamp)
+                current_index = st.session_state.get('current_index', len(data['timestamps']))
                 
-                # Queue the update (will be applied client-side)
-                st.session_state['pending_updates'].append({
-                    'timestamp': new_point['timestamp'].isoformat(),
-                    'total': float(new_point['total']),
-                    'attack': int(new_point['attack']),
-                    'attack_traffic': float(new_point['attack_traffic'])
-                })
-                
-                # Update data with rolling window (for metrics calculation)
-                data['timestamps'].append(new_point['timestamp'])
-                data['total'] = np.append(data['total'], new_point['total'])
-                data['normal'] = np.append(data['normal'], new_point['normal'])
-                data['attacks'] = np.append(data['attacks'], new_point['attack'])
-                data['attack_traffic'] = np.append(data['attack_traffic'], new_point['attack_traffic'])
-                
-                # Keep last MONITORING_POINTS
-                if len(data['timestamps']) > MONITORING_POINTS:
-                    data['timestamps'] = data['timestamps'][-MONITORING_POINTS:]
-                    data['total'] = data['total'][-MONITORING_POINTS:]
-                    data['normal'] = data['normal'][-MONITORING_POINTS:]
-                    data['attacks'] = data['attacks'][-MONITORING_POINTS:]
-                    data['attack_traffic'] = data['attack_traffic'][-MONITORING_POINTS:]
+                # Check if we have pre-generated data
+                if 'full_timestamps' in data and current_index < len(data['full_timestamps']):
+                    # Get next data point from pre-generated data
+                    next_index = current_index
+                    new_point = {
+                        'timestamp': data['full_timestamps'][next_index],
+                        'total': float(data['full_total'][next_index]),
+                        'attack': int(data['full_attacks'][next_index]),
+                        'attack_traffic': float(data['full_attack_traffic'][next_index])
+                    }
+                    
+                    # Queue the update (will be applied client-side)
+                    st.session_state['pending_updates'].append(new_point)
+                    
+                    # Update displayed data with rolling window
+                    data['timestamps'].append(new_point['timestamp'])
+                    data['total'] = np.append(data['total'], new_point['total'])
+                    data['normal'] = np.append(data['normal'], data['full_normal'][next_index])
+                    data['attacks'] = np.append(data['attacks'], new_point['attack'])
+                    data['attack_traffic'] = np.append(data['attack_traffic'], new_point['attack_traffic'])
+                    
+                    # Keep last MONITORING_POINTS
+                    if len(data['timestamps']) > MONITORING_POINTS:
+                        data['timestamps'] = data['timestamps'][-MONITORING_POINTS:]
+                        data['total'] = data['total'][-MONITORING_POINTS:]
+                        data['normal'] = data['normal'][-MONITORING_POINTS:]
+                        data['attacks'] = data['attacks'][-MONITORING_POINTS:]
+                        data['attack_traffic'] = data['attack_traffic'][-MONITORING_POINTS:]
+                    
+                    # Move pointer forward
+                    st.session_state['current_index'] = next_index + 1
+                    
+                    # If we reached the end, loop back to start
+                    if st.session_state['current_index'] >= len(data['full_timestamps']):
+                        st.session_state['current_index'] = MONITORING_POINTS  # Loop back
                 
                 st.session_state['monitoring_data'] = data
-                st.session_state['last_timestamp'] = new_point['timestamp']
                 st.session_state['last_refresh'] = datetime.now()
                 st.session_state['update_counter'] = st.session_state.get('update_counter', 0) + 1
                 

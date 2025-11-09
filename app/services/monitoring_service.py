@@ -26,44 +26,58 @@ class MonitoringService:
         self,
         n_points: int = 100,
         attack_probability: float = 0.15,
-        start_time: datetime = None
+        start_time: datetime = None,
+        pre_generate: int = 1000
     ) -> Dict:
         """
-        Trafik verisi simüle et
+        Trafik verisi simüle et (önceden üretilmiş veri ile)
         
         Args:
-            n_points: Zaman noktası sayısı
+            n_points: Görüntülenecek zaman noktası sayısı
             attack_probability: Saldırı olasılığı
             start_time: Başlangıç zamanı
+            pre_generate: Önceden üretilecek toplam veri noktası sayısı
             
         Returns:
-            Dict: timestamps, total, attacks, normal
+            Dict: timestamps, total, attacks, normal, full_data (tüm önceden üretilmiş veri)
         """
         if start_time is None:
             start_time = datetime.now() - timedelta(minutes=n_points)
         
-        timestamps = [start_time + timedelta(minutes=i) for i in range(n_points)]
+        # Önceden daha fazla veri üret (smooth görünüm için)
+        total_points = max(pre_generate, n_points * 10)
         
-        # Normal trafik baseline
-        normal_traffic = np.random.normal(self.baseline_normal, self.baseline_std, n_points)
+        timestamps = [start_time + timedelta(minutes=i) for i in range(total_points)]
+        
+        # Normal trafik baseline (daha smooth görünüm için trend ekle)
+        base_trend = np.linspace(self.baseline_normal, self.baseline_normal * 1.2, total_points)
+        normal_traffic = np.random.normal(base_trend, self.baseline_std)
         normal_traffic = np.maximum(normal_traffic, 0)  # Negatif değerleri 0 yap
         
-        # Saldırı tespitleri
-        attack_spikes = np.random.choice([0, 1], n_points, p=[1-attack_probability, attack_probability])
+        # Saldırı tespitleri (daha gerçekçi dağılım)
+        attack_spikes = np.random.choice([0, 1], total_points, p=[1-attack_probability, attack_probability])
         
         # Saldırı trafiği (daha yüksek değerler)
-        attack_traffic = attack_spikes * np.random.normal(300, 50, n_points)
+        attack_traffic = attack_spikes * np.random.normal(300, 50, total_points)
         attack_traffic = np.maximum(attack_traffic, 0)
         
         # Toplam trafik
         total_traffic = normal_traffic + attack_traffic
         
+        # İlk n_points'i göster
         return {
-            'timestamps': timestamps,
-            'total': total_traffic,
-            'normal': normal_traffic,
-            'attacks': attack_spikes.astype(int),
-            'attack_traffic': attack_traffic
+            'timestamps': timestamps[:n_points],
+            'total': total_traffic[:n_points],
+            'normal': normal_traffic[:n_points],
+            'attacks': attack_spikes[:n_points].astype(int),
+            'attack_traffic': attack_traffic[:n_points],
+            # Tüm önceden üretilmiş veri
+            'full_timestamps': timestamps,
+            'full_total': total_traffic,
+            'full_normal': normal_traffic,
+            'full_attacks': attack_spikes.astype(int),
+            'full_attack_traffic': attack_traffic,
+            'current_index': n_points  # Şu an gösterilen son index
         }
     
     def generate_live_update(
