@@ -303,44 +303,52 @@ class ChartComponents:
             annotation_position="right"
         )
         
-        # Update axes with modern styling
-        fig.update_xaxes(
-            title_text="<b>Time</b>",
-            title_font=dict(size=15, color=MODERN_COLORS['dark'], family='Inter'),
-            gridcolor='rgba(203, 213, 225, 0.3)',
-            gridwidth=0.5,
-            showgrid=True,
-            row=2, col=1
+        # Modern layout with dark mode support
+        fig.update_layout(
+            title=dict(
+                text="<b>Real-Time Network Traffic & Attack Detection</b>",
+                font=dict(size=20, family='Inter', color='white'),
+                x=0.5,
+                xanchor='center'
+            ),
+            xaxis=dict(
+                title=dict(
+                    text="<b>Time</b>",
+                    font=dict(size=13, family='Inter', color='white')
+                ),
+                showgrid=True,
+                gridwidth=0.5,
+                gridcolor='rgba(148, 163, 184, 0.15)',
+                tickfont=dict(color='white')
+            ),
+            yaxis=dict(
+                title=dict(
+                    text="<b>Traffic (packets/sec)</b>",
+                    font=dict(size=13, family='Inter', color='white')
+                ),
+                showgrid=True,
+                gridwidth=0.5,
+                gridcolor='rgba(148, 163, 184, 0.15)',
+                tickfont=dict(color='white')
+            ),
+            height=450,
+            hovermode='x unified',
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="center",
+                x=0.5,
+                bgcolor='rgba(0, 0, 0, 0.5)',
+                bordercolor='rgba(255, 255, 255, 0.2)',
+                borderwidth=1,
+                font=dict(color='white', size=12)
+            ),
+            plot_bgcolor='rgba(0, 0, 0, 0)',
+            paper_bgcolor='rgba(0, 0, 0, 0)',
+            font=dict(family='Inter', color='white'),
+            margin=dict(l=60, r=40, t=80, b=60)
         )
-        
-        fig.update_yaxes(
-            title_text="<b>Packets/sec</b>",
-            title_font=dict(size=15, color=MODERN_COLORS['dark'], family='Inter'),
-            gridcolor='rgba(203, 213, 225, 0.3)',
-            gridwidth=0.5,
-            showgrid=True,
-            zeroline=False,
-            row=1, col=1
-        )
-        
-        fig.update_yaxes(
-            title_text="<b>Events</b>",
-            title_font=dict(size=15, color=MODERN_COLORS['dark'], family='Inter'),
-            range=[0, 1.5],
-            gridcolor='rgba(203, 213, 225, 0.3)',
-            gridwidth=0.5,
-            showgrid=True,
-            zeroline=False,
-            row=2, col=1
-        )
-        
-        # Premium layout
-        layout_config = MODERN_LAYOUT.copy()
-        layout_config.update({
-            'height': 700,
-            'margin': dict(l=60, r=40, t=80, b=60),
-        })
-        fig.update_layout(**layout_config)
         
         return fig
     
