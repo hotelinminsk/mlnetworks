@@ -225,7 +225,6 @@ class ChartComponents:
             ),
             barmode='overlay',
             height=450,
-            hovermode='x unified',
             **MODERN_LAYOUT
         )
         
@@ -351,12 +350,13 @@ class ChartComponents:
         )
         
         # Modern layout
-        fig.update_layout(
-            height=650,
-            margin=dict(l=50, r=30, t=60, b=50),
-            hovermode='x unified',
-            **MODERN_LAYOUT
-        )
+        layout_config = MODERN_LAYOUT.copy()
+        layout_config.update({
+            'height': 650,
+            'margin': dict(l=50, r=30, t=60, b=50),
+            'hovermode': 'x unified'
+        })
+        fig.update_layout(**layout_config)
         
         return fig
     
