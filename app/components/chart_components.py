@@ -25,7 +25,7 @@ MODERN_LAYOUT = {
     'font': {
         'family': "Inter, -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
         'size': 13,
-        'color': MODERN_COLORS['label_color']
+        'color': MODERN_COLORS['dark']
     },
     'plot_bgcolor': 'rgba(0,0,0,0)',
     'paper_bgcolor': 'rgba(0,0,0,0)',
@@ -50,6 +50,18 @@ MODERN_LAYOUT = {
         'bgcolor': 'rgba(255, 255, 255, 0.98)',
         'bordercolor': MODERN_COLORS['primary'],
         'font': {'size': 13, 'family': 'Inter', 'color': MODERN_COLORS['dark']}
+    },
+    'xaxis': {
+        'gridcolor': 'rgba(203, 213, 225, 0.3)',
+        'gridwidth': 0.5,
+        'showgrid': True,
+        'zeroline': False
+    },
+    'yaxis': {
+        'gridcolor': 'rgba(203, 213, 225, 0.3)',
+        'gridwidth': 0.5,
+        'showgrid': True,
+        'zeroline': False
     }
 }
 
@@ -305,18 +317,18 @@ class ChartComponents:
         # Update axes with modern styling
         fig.update_xaxes(
             title_text="<b>Time</b>",
-            title_font=dict(size=14, color=MODERN_COLORS['dark']),
-            gridcolor=MODERN_COLORS['grid'],
-            gridwidth=1.5,
+            title_font=dict(size=15, color=MODERN_COLORS['dark'], family='Inter'),
+            gridcolor='rgba(203, 213, 225, 0.3)',
+            gridwidth=0.5,
             showgrid=True,
             row=2, col=1
         )
         
         fig.update_yaxes(
             title_text="<b>Packets/sec</b>",
-            title_font=dict(size=14, color=MODERN_COLORS['dark']),
-            gridcolor=MODERN_COLORS['grid'],
-            gridwidth=1.5,
+            title_font=dict(size=15, color=MODERN_COLORS['dark'], family='Inter'),
+            gridcolor='rgba(203, 213, 225, 0.3)',
+            gridwidth=0.5,
             showgrid=True,
             zeroline=False,
             row=1, col=1
@@ -324,10 +336,10 @@ class ChartComponents:
         
         fig.update_yaxes(
             title_text="<b>Events</b>",
-            title_font=dict(size=14, color=MODERN_COLORS['dark']),
+            title_font=dict(size=15, color=MODERN_COLORS['dark'], family='Inter'),
             range=[0, 1.5],
-            gridcolor=MODERN_COLORS['grid'],
-            gridwidth=1.5,
+            gridcolor='rgba(203, 213, 225, 0.3)',
+            gridwidth=0.5,
             showgrid=True,
             zeroline=False,
             row=2, col=1
