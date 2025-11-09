@@ -445,23 +445,32 @@ def render_realtime_monitoring_tab(
     if 'monitoring_data' in st.session_state:
         data = st.session_state['monitoring_data']
         
-        # Client-side data generation - update data without full page reload
+        # Pre-generate data for client-side updates (no page reload)
         if monitoring_active:
             if 'data_generator_active' not in st.session_state:
                 st.session_state['data_generator_active'] = True
                 st.session_state['last_timestamp'] = data['timestamps'][-1]
                 st.session_state['update_counter'] = 0
                 st.session_state['last_refresh'] = datetime.now()
+                st.session_state['pending_updates'] = []  # Queue for new data points
             
             elapsed = (datetime.now() - st.session_state['last_refresh']).total_seconds()
             
-            # Generate new data points continuously
+            # Generate new data points and queue them for client-side update
             if elapsed >= refresh_interval:
                 # Generate new data point
                 last_timestamp = st.session_state.get('last_timestamp', data['timestamps'][-1])
                 new_point = monitoring_service.generate_live_update(last_timestamp)
                 
-                # Update data with rolling window
+                # Queue the update (will be applied client-side)
+                st.session_state['pending_updates'].append({
+                    'timestamp': new_point['timestamp'].isoformat(),
+                    'total': float(new_point['total']),
+                    'attack': int(new_point['attack']),
+                    'attack_traffic': float(new_point['attack_traffic'])
+                })
+                
+                # Update data with rolling window (for metrics calculation)
                 data['timestamps'].append(new_point['timestamp'])
                 data['total'] = np.append(data['total'], new_point['total'])
                 data['normal'] = np.append(data['normal'], new_point['normal'])
@@ -481,10 +490,10 @@ def render_realtime_monitoring_tab(
                 st.session_state['last_refresh'] = datetime.now()
                 st.session_state['update_counter'] = st.session_state.get('update_counter', 0) + 1
                 
-                # Use st.interval for automatic updates (minimal rerun)
-                # This will only update the chart placeholder, not the entire page
-                time.sleep(0.05)  # Small delay to prevent too frequent updates
-                st.rerun()
+                # DON'T rerun - let JavaScript handle the update
+                # Only rerun if we need to update metrics (less frequently)
+                if st.session_state['update_counter'] % 5 == 0:  # Update metrics every 5 data points
+                    st.rerun()
         
         metrics = monitoring_service.calculate_metrics(data)
         
@@ -573,34 +582,102 @@ def render_realtime_monitoring_tab(
                 }
             )
             
-            # JavaScript for seamless client-side updates (trading chart style)
+            # JavaScript for true client-side updates (trading chart style - NO page reload)
             if monitoring_active:
-                # Prepare data for JavaScript
-                timestamps_js = [ts.isoformat() for ts in data['timestamps']]
-                total_js = data['total'].tolist()
-                attacks_js = data['attacks'].tolist()
+                # Get pending updates from session state
+                pending_updates = st.session_state.get('pending_updates', [])
+                pending_updates_json = json.dumps(pending_updates) if pending_updates else "[]"
+                
+                # Clear pending updates after sending to client
+                if pending_updates:
+                    st.session_state['pending_updates'] = []
                 
                 st.markdown(f"""
                 <script>
                 (function() {{
                     const UPDATE_INTERVAL = {int(refresh_interval * 1000)};
                     let updateCounter = 0;
+                    let pendingUpdates = {pending_updates_json};
                     
-                    function updateChartSeamlessly() {{
-                        // Find Plotly chart
-                        const chartDiv = document.querySelector('[data-testid="stPlotlyChart"] iframe');
-                        if (!chartDiv) {{
-                            // Try alternative selector
-                            const plotlyDiv = document.querySelector('.js-plotly-plot');
-                            if (!plotlyDiv) return;
+                    function findPlotlyChart() {{
+                        // Find Plotly chart in iframe
+                        const iframe = document.querySelector('[data-testid="stPlotlyChart"] iframe');
+                        if (iframe && iframe.contentWindow) {{
+                            try {{
+                                const plotlyDiv = iframe.contentDocument.querySelector('.js-plotly-plot');
+                                if (plotlyDiv && plotlyDiv.data) {{
+                                    return iframe.contentWindow.Plotly;
+                                }}
+                            }} catch(e) {{
+                                // Cross-origin issue, try direct access
+                            }}
                         }}
                         
-                        // Use Streamlit's built-in update mechanism
-                        // The chart will be updated via Python's st.rerun()
-                        // but we minimize visual flicker by using static key
+                        // Try direct access
+                        const plotlyDiv = document.querySelector('.js-plotly-plot');
+                        if (plotlyDiv && window.Plotly) {{
+                            return window.Plotly;
+                        }}
+                        
+                        return null;
                     }}
                     
-                    // Set up auto-refresh indicator
+                    function updateChartClientSide() {{
+                        const Plotly = findPlotlyChart();
+                        if (!Plotly || pendingUpdates.length === 0) return;
+                        
+                        // Get chart element
+                        const chartDiv = document.querySelector('.js-plotly-plot') || 
+                                       document.querySelector('[data-testid="stPlotlyChart"] .js-plotly-plot');
+                        if (!chartDiv) return;
+                        
+                        // Process pending updates
+                        pendingUpdates.forEach(update => {{
+                            // Extend traces with new data point
+                            const newTimestamp = new Date(update.timestamp);
+                            const newTotal = update.total;
+                            const newAttack = update.attack;
+                            
+                            // Extend traffic trace
+                            Plotly.extendTraces(chartDiv, {{
+                                x: [[newTimestamp]],
+                                y: [[newTotal]]
+                            }}, [0]); // First trace (traffic)
+                            
+                            // If attack, add attack marker
+                            if (newAttack === 1) {{
+                                Plotly.extendTraces(chartDiv, {{
+                                    x: [[newTimestamp]],
+                                    y: [[newTotal]]
+                                }}, [1]); // Second trace (attacks)
+                            }}
+                            
+                            // Remove old points to keep window size
+                            const maxPoints = {MONITORING_POINTS};
+                            Plotly.relayout(chartDiv, {{
+                                'xaxis.range': [
+                                    new Date(newTimestamp.getTime() - maxPoints * 60000),
+                                    newTimestamp
+                                ]
+                            }});
+                        }});
+                        
+                        pendingUpdates = []; // Clear processed updates
+                    }}
+                    
+                    // Set up auto-refresh for fetching new data
+                    function startAutoRefresh() {{
+                        const refreshInterval = setInterval(() => {{
+                            // Fetch new data from Streamlit (via hidden element or API)
+                            // For now, we'll trigger a minimal update
+                            const event = new CustomEvent('streamlit:update');
+                            window.dispatchEvent(event);
+                        }}, UPDATE_INTERVAL);
+                        
+                        return refreshInterval;
+                    }}
+                    
+                    // Set up countdown
                     function updateCountdown() {{
                         const countdownEl = document.getElementById('refresh-countdown');
                         if (countdownEl) {{
@@ -610,6 +687,8 @@ def render_realtime_monitoring_tab(
                                 if (remaining <= 0) {{
                                     remaining = UPDATE_INTERVAL / 1000;
                                     updateCounter++;
+                                    // Process pending updates
+                                    updateChartClientSide();
                                 }}
                                 if (countdownEl) {{
                                     countdownEl.textContent = remaining.toFixed(1) + 's';
@@ -618,15 +697,31 @@ def render_realtime_monitoring_tab(
                         }}
                     }}
                     
-                    // Initialize
-                    updateCountdown();
+                    // Initialize when chart is ready
+                    function initChartUpdates() {{
+                        // Wait for Plotly to be ready
+                        const checkPlotly = setInterval(() => {{
+                            if (findPlotlyChart()) {{
+                                clearInterval(checkPlotly);
+                                updateChartClientSide(); // Process any pending updates
+                                updateCountdown();
+                                startAutoRefresh();
+                            }}
+                        }}, 100);
+                        
+                        // Timeout after 5 seconds
+                        setTimeout(() => clearInterval(checkPlotly), 5000);
+                    }}
                     
-                    // Clean up on tab change
-                    document.addEventListener('visibilitychange', () => {{
-                        if (document.hidden) {{
-                            // Pause updates when tab is hidden
-                        }}
-                    }});
+                    // Initialize on page load
+                    if (document.readyState === 'loading') {{
+                        document.addEventListener('DOMContentLoaded', initChartUpdates);
+                    }} else {{
+                        initChartUpdates();
+                    }}
+                    
+                    // Re-initialize on Streamlit rerun (but don't reload page)
+                    window.addEventListener('load', initChartUpdates);
                 }})();
                 </script>
                 """, unsafe_allow_html=True)
