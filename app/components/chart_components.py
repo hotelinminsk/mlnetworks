@@ -33,7 +33,7 @@ MODERN_COLORS = {
     'grid': '#e2e8f0'
 }
 
-# Modern chart templates
+# Modern chart templates (xaxis ve yaxis her grafikte özel tanımlanacak)
 MODERN_LAYOUT = {
     'font': {'family': 'Inter, -apple-system, BlinkMacSystemFont, sans-serif', 'size': 12},
     'plot_bgcolor': 'rgba(0,0,0,0)',
@@ -49,18 +49,6 @@ MODERN_LAYOUT = {
         'bgcolor': 'rgba(255,255,255,0.8)',
         'bordercolor': 'rgba(0,0,0,0.1)',
         'borderwidth': 1
-    },
-    'xaxis': {
-        'gridcolor': MODERN_COLORS['grid'],
-        'gridwidth': 1,
-        'showgrid': True,
-        'zeroline': False
-    },
-    'yaxis': {
-        'gridcolor': MODERN_COLORS['grid'],
-        'gridwidth': 1,
-        'showgrid': True,
-        'zeroline': False
     }
 }
 
