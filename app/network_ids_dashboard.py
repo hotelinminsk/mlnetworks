@@ -511,39 +511,39 @@ def render_realtime_monitoring_tab(
         # Alert Panel in placeholder
         with alerts_placeholder.container():
             if metrics['attack_count'] > 0:
-            st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:600;margin-top:1rem;"><i data-lucide="alert-triangle" style="width:24px;height:24px;color:#ef4444;"></i><span>Recent Alerts</span></div>', unsafe_allow_html=True)
-            
-            alert_col1, alert_col2 = st.columns([3, 1])
-            
-            with alert_col1:
-                # Son 20 noktadaki saldırıları göster
-                recent_attacks = [
-                    (data['timestamps'][i], data['attacks'][i])
-                    for i in range(max(0, len(data['timestamps'])-20), len(data['timestamps']))
-                    if data['attacks'][i] == 1
-                ]
+                st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:600;margin-top:1rem;"><i data-lucide="alert-triangle" style="width:24px;height:24px;color:#ef4444;"></i><span>Recent Alerts</span></div>', unsafe_allow_html=True)
                 
-                for idx, (t, a) in enumerate(recent_attacks[:3]):  # En fazla 3 alert
-                    st.error(
-                        f"**ALERT #{idx+1}** | "
-                        f"Time: {t.strftime('%H:%M:%S')} | "
-                        f"Threat: High | "
-                        f"Action: Blocked"
+                alert_col1, alert_col2 = st.columns([3, 1])
+                
+                with alert_col1:
+                    # Son 20 noktadaki saldırıları göster
+                    recent_attacks = [
+                        (data['timestamps'][i], data['attacks'][i])
+                        for i in range(max(0, len(data['timestamps'])-20), len(data['timestamps']))
+                        if data['attacks'][i] == 1
+                    ]
+                    
+                    for idx, (t, a) in enumerate(recent_attacks[:3]):  # En fazla 3 alert
+                        st.error(
+                            f"**ALERT #{idx+1}** | "
+                            f"Time: {t.strftime('%H:%M:%S')} | "
+                            f"Threat: High | "
+                            f"Action: Blocked"
+                        )
+                
+                with alert_col2:
+                    st.markdown("**Threat Level**")
+                    threat_level, threat_percentage = monitoring_service.get_threat_level(
+                        metrics['attack_count'],
+                        len(data['attacks'])
                     )
-            
-            with alert_col2:
-                st.markdown("**Threat Level**")
-                threat_level, threat_percentage = monitoring_service.get_threat_level(
-                    metrics['attack_count'],
-                    len(data['attacks'])
-                )
-                
-                if threat_level == "Low":
-                    st.success(f"{threat_level}\n\n{threat_percentage}%")
-                elif threat_level == "Medium":
-                    st.warning(f"{threat_level}\n\n{threat_percentage}%")
-                else:
-                    st.error(f"{threat_level}\n\n{threat_percentage}%")
+                    
+                    if threat_level == "Low":
+                        st.success(f"{threat_level}\n\n{threat_percentage}%")
+                    elif threat_level == "Medium":
+                        st.warning(f"{threat_level}\n\n{threat_percentage}%")
+                    else:
+                        st.error(f"{threat_level}\n\n{threat_percentage}%")
     else:
         st.info("'Yeni Monitoring Başlat' butonuna basın!")
 
