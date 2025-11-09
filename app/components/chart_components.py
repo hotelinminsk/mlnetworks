@@ -198,15 +198,13 @@ class ChartComponents:
                 xanchor='center'
             ),
             xaxis=dict(
-                title="Saldırı Olasılığı",
-                titlefont=dict(size=14, color='#64748b'),
+                title=dict(text="Saldırı Olasılığı", font=dict(size=14, color='#64748b')),
                 gridcolor=MODERN_COLORS['grid'],
                 gridwidth=1,
                 zeroline=False
             ),
             yaxis=dict(
-                title="Örnek Sayısı",
-                titlefont=dict(size=14, color='#64748b'),
+                title=dict(text="Örnek Sayısı", font=dict(size=14, color='#64748b')),
                 gridcolor=MODERN_COLORS['grid'],
                 gridwidth=1,
                 zeroline=False
@@ -400,15 +398,13 @@ class ChartComponents:
                 xanchor='center'
             ),
             xaxis=dict(
-                title="False Positive Rate",
-                titlefont=dict(size=14, color='#64748b'),
+                title=dict(text="False Positive Rate", font=dict(size=14, color='#64748b')),
                 range=[0, 1],
                 gridcolor=MODERN_COLORS['grid'],
                 gridwidth=1
             ),
             yaxis=dict(
-                title="True Positive Rate",
-                titlefont=dict(size=14, color='#64748b'),
+                title=dict(text="True Positive Rate", font=dict(size=14, color='#64748b')),
                 range=[0, 1],
                 gridcolor=MODERN_COLORS['grid'],
                 gridwidth=1
@@ -463,13 +459,11 @@ class ChartComponents:
                 xanchor='center'
             ),
             xaxis=dict(
-                title="<b>Tahmin Edilen</b>",
-                titlefont=dict(size=14, color='#64748b'),
+                title=dict(text="<b>Tahmin Edilen</b>", font=dict(size=14, color='#64748b')),
                 gridcolor=MODERN_COLORS['grid']
             ),
             yaxis=dict(
-                title="<b>Gerçek</b>",
-                titlefont=dict(size=14, color='#64748b'),
+                title=dict(text="<b>Gerçek</b>", font=dict(size=14, color='#64748b')),
                 gridcolor=MODERN_COLORS['grid']
             ),
             height=450,
