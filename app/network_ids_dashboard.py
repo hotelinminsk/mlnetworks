@@ -254,27 +254,27 @@ def render_live_demo_tab(
             help="Farklı test modları"
         )
         
-        if demo_mode == "🎯 Tek Örnek Test":
+        if demo_mode == "Tek Örnek Test":
             traffic_type = st.selectbox(
                 "Trafik Türü:",
-                ["🟢 Normal Trafik", "🔴 Saldırı Trafiği", "🎲 Rastgele"]
+                ["Normal Trafik", "Saldırı Trafiği", "Rastgele"]
             )
             n_samples = 1
-        elif demo_mode == "🔄 Batch Tahmin":
+        elif demo_mode == "Batch Tahmin":
             traffic_type = st.selectbox(
                 "Trafik Türü:",
-                ["🟢 Normal Trafik", "🔴 Saldırı Trafiği", "🎲 Karışık"]
+                ["Normal Trafik", "Saldırı Trafiği", "Karışık"]
             )
             n_samples = st.slider("Örnek Sayısı:", MIN_SAMPLES, MAX_SAMPLES, DEFAULT_BATCH_SAMPLES)
         else:  # Rastgele simülasyon
-            traffic_type = "🎲 Rastgele"
+            traffic_type = "Rastgele"
             n_samples = st.slider("Simülasyon Boyutu:", MIN_SIMULATION, MAX_SIMULATION, DEFAULT_SIMULATION)
             
-            if st.button("🔄 YENİ SİMÜLASYON", type="primary", use_container_width=True):
+            if st.button("YENİ SİMÜLASYON", type="primary", use_container_width=True):
                 st.session_state.clear()
         
         st.markdown("---")
-        compare_models = st.checkbox("🆚 Tüm Modelleri Karşılaştır", value=False)
+        compare_models = st.checkbox("Tüm Modelleri Karşılaştır", value=False)
         
         if st.button("TAHMİN YAP!", type="primary", use_container_width=True, key="predict_btn"):
             # Select samples
