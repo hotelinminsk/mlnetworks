@@ -70,22 +70,22 @@ st.markdown("""
     }
     
     .main-header {
-        font-size: 2.8rem;
-        font-weight: bold;
+        font-size: 1.5rem;
+        font-weight: 600;
         text-align: center;
         background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        padding: 10px;
+        padding: 5px;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 15px;
+        gap: 10px;
     }
     
     .main-header .lucide {
-        width: 50px;
-        height: 50px;
+        width: 24px;
+        height: 24px;
         stroke: #667eea;
     }
     .stTabs [data-baseweb="tab-list"] {
@@ -106,6 +106,27 @@ st.markdown("""
     [data-testid="stMetricValue"] {
         font-size: 1.5rem;
     }
+    
+    /* Better spacing for columns */
+    [data-testid="column"] {
+        padding: 0 8px;
+    }
+    
+    /* Smooth transitions */
+    div[style*="border-radius"] {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    div[style*="border-radius"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    /* Better section spacing */
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -125,7 +146,7 @@ def render_header(models: Dict[str, Any], X_test: pd.DataFrame) -> None:
         unsafe_allow_html=True
     )
     st.markdown(
-        f"<p style='text-align: center; color: #666;'>"
+        f"<p style='text-align: center; color: #666; font-size: 0.9rem; margin-top: -10px;'>"
         f"Gerçek Zamanlı Ağ Saldırı Tespiti | {len(models)} Model Aktif | {len(X_test):,} Test Örneği</p>",
         unsafe_allow_html=True
     )
@@ -140,7 +161,7 @@ def render_performance_metrics(
     threshold: float
 ) -> None:
     """Performans metriklerini render et"""
-    st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:600;"><i data-lucide="trending-up" style="width:24px;height:24px;"></i><span>Sistem Performansı</span></div>', unsafe_allow_html=True)
+    st.markdown("### Sistem Performansı")
     
     # Get model predictions with error handling
     try:
@@ -154,17 +175,21 @@ def render_performance_metrics(
     # Calculate metrics
     metrics = MetricsService.calculate_all_metrics(y_test, y_pred, y_proba)
     
-    # Display metrics
-    metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+    # Modern card-style metrics with better layout
+    metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4, gap="medium")
+    
+    fp_per_day = int(metrics['fp'] / 7)  # 7 days assumption
     
     with metric_col1:
         st.markdown(
             f"""
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        padding: 20px; border-radius: 10px; color: white; text-align: center;">
-                <h2 style="margin: 0; font-size: 2.5rem;">{metrics['roc_auc']:.4f}</h2>
-                <p style="margin: 5px 0 0 0; opacity: 0.9;">ROC AUC Score</p>
-                <small style="opacity: 0.7;">{model_name}</small>
+            <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+                        border: 1px solid rgba(102, 126, 234, 0.3); 
+                        padding: 20px; border-radius: 12px; height: 100%; 
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+                <div style="color: #94a3b8; font-size: 0.8rem; font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">ROC AUC</div>
+                <div style="color: #ffffff; font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 4px;">{metrics['roc_auc']:.4f}</div>
+                <div style="color: #64748b; font-size: 0.75rem; margin-top: 4px;">{model_name}</div>
             </div>
             """,
             unsafe_allow_html=True
@@ -173,25 +198,28 @@ def render_performance_metrics(
     with metric_col2:
         st.markdown(
             f"""
-            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-                        padding: 20px; border-radius: 10px; color: white; text-align: center;">
-                <h2 style="margin: 0; font-size: 2.5rem;">{int(threshold*100)}%</h2>
-                <p style="margin: 5px 0 0 0; opacity: 0.9;">Threshold</p>
-                <small style="opacity: 0.7;">Decision Threshold</small>
+            <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%);
+                        border: 1px solid rgba(139, 92, 246, 0.3); 
+                        padding: 20px; border-radius: 12px; height: 100%; 
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+                <div style="color: #94a3b8; font-size: 0.8rem; font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Threshold</div>
+                <div style="color: #ffffff; font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 4px;">{int(threshold*100)}%</div>
+                <div style="color: #64748b; font-size: 0.75rem; margin-top: 4px;">Decision Threshold</div>
             </div>
             """,
             unsafe_allow_html=True
         )
     
     with metric_col3:
-        fp_per_day = int(metrics['fp'] / 7)  # 7 days assumption
         st.markdown(
             f"""
-            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-                        padding: 20px; border-radius: 10px; color: white; text-align: center;">
-                <h2 style="margin: 0; font-size: 2.5rem;">~{fp_per_day}</h2>
-                <p style="margin: 5px 0 0 0; opacity: 0.9;">Yanlış Alarm/Gün</p>
-                <small style="opacity: 0.7;">False Positives</small>
+            <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(96, 165, 250, 0.15) 100%);
+                        border: 1px solid rgba(59, 130, 246, 0.3); 
+                        padding: 20px; border-radius: 12px; height: 100%; 
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+                <div style="color: #94a3b8; font-size: 0.8rem; font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">False Positives</div>
+                <div style="color: #ffffff; font-size: 2rem; font-weight: 700; line-height: 1.2;">~{fp_per_day}</div>
+                <div style="color: #64748b; font-size: 0.75rem; margin-top: 4px;">per day</div>
             </div>
             """,
             unsafe_allow_html=True
@@ -200,11 +228,13 @@ def render_performance_metrics(
     with metric_col4:
         st.markdown(
             f"""
-            <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-                        padding: 20px; border-radius: 10px; color: white; text-align: center;">
-                <h2 style="margin: 0; font-size: 2.5rem;">{metrics['recall']*100:.1f}%</h2>
-                <p style="margin: 5px 0 0 0; opacity: 0.9;">Recall</p>
-                <small style="opacity: 0.7;">Saldırı Bulma</small>
+            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(52, 211, 153, 0.15) 100%);
+                        border: 1px solid rgba(16, 185, 129, 0.3); 
+                        padding: 20px; border-radius: 12px; height: 100%; 
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+                <div style="color: #94a3b8; font-size: 0.8rem; font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Recall</div>
+                <div style="color: #ffffff; font-size: 2rem; font-weight: 700; line-height: 1.2;">{metrics['recall']*100:.1f}%</div>
+                <div style="color: #64748b; font-size: 0.75rem; margin-top: 4px;">Attack Detection</div>
             </div>
             """,
             unsafe_allow_html=True

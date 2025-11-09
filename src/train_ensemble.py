@@ -21,8 +21,8 @@ def train_random_forest(X_train, y_train, X_test, y_test):
         max_features='sqrt',
         class_weight='balanced',
         random_state=RANDOM_STATE,
-        n_jobs=-1,
-        verbose=1
+        n_jobs=1,  # Parallelization sorununu önlemek için
+        verbose=0
     )
 
     clf.fit(X_train, y_train)
@@ -67,7 +67,7 @@ def train_gradient_boosting(X_train, y_train, X_test, y_test):
         subsample=0.8618286290542155,
         max_features='sqrt',
         random_state=RANDOM_STATE,
-        verbose=1
+        verbose=0
     )
 
     clf.fit(X_train, y_train)
@@ -111,8 +111,8 @@ def train_extra_trees(X_train, y_train, X_test, y_test):
         max_features=None,
         class_weight='balanced',
         random_state=RANDOM_STATE,
-        n_jobs=-1,
-        verbose=1
+        n_jobs=1,  # Parallelization sorununu önlemek için
+        verbose=0
     )
 
     clf.fit(X_train, y_train)

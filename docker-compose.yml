@@ -11,6 +11,8 @@ services:
       - "8000:8000"
     volumes:
       - ./models:/app/models
+      - ./data:/app/data
+      - ./processed:/app/processed
     environment:
       - PYTHONUNBUFFERED=1
       - MODEL_NAME=gradient_boosting
@@ -33,12 +35,17 @@ services:
     volumes:
       - ./models:/app/models
       - ./data:/app/data
+      - ./processed:/app/processed
       - ./reports:/app/reports
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
-    depends_on:
-      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # MLflow Tracking Server
   mlflow:

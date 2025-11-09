@@ -53,19 +53,28 @@ class RealtimeMonitoringView:
         self.render_controls()
         st.markdown("---")
         
-        # Fragment'i çağır (her 1 saniyede otomatik çalışır)
+        # Fragment'i kullan (sadece aktifken güncelleme yapar)
         self._render_monitoring_fragment()
     
-    @st.fragment(run_every="1s")
+    @st.fragment(run_every="3s")
     def _render_monitoring_fragment(self) -> None:
-        """Fragment: Sadece bu kısım yenilenir"""
-        # Yeni veri noktası üret
+        """Fragment: Sadece bu kısım yenilenir (3 saniyede bir, daha az rerun)"""
+        # Monitoring aktif değilse sadece mevcut veriyi göster
+        if not self.service.is_active():
+            self._render_data()
+            return
+        
+        # Yeni veri noktası üret (sadece aktifken)
         new_row = self.service.generate_data_point()
         
         if new_row is not None:
             self.service.update_data(new_row)
         
-        # Mevcut veriyi al
+        # Veriyi render et
+        self._render_data()
+    
+    def _render_data(self) -> None:
+        """Veriyi render et (ortak fonksiyon)"""
         monitoring_df = self.service.get_current_data()
         
         if len(monitoring_df) == 0:

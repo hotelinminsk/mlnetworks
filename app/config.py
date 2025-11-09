@@ -36,6 +36,16 @@ MODEL_CONFIGS = {
         "icon": "tree-palm",
         "type": "ensemble"
     },
+    "LightGBM": {
+        "file": "lightgbm.joblib",
+        "icon": "gauge",
+        "type": "gradient_boosting"
+    },
+    "XGBoost": {
+        "file": "xgboost.joblib",
+        "icon": "trending-up",
+        "type": "gradient_boosting"
+    },
 }
 
 # Default Values

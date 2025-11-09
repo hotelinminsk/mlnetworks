@@ -33,7 +33,7 @@ def main():
         'reg_lambda': 1.0,
         'scale_pos_weight': len(y_train[y_train == 0]) / len(y_train[y_train == 1]),  # Handle imbalance
         'random_state': RANDOM_STATE,
-        'n_jobs': -1,
+        'n_jobs': 1,  # Parallelization sorununu önlemek için
         'tree_method': 'hist',  # Faster training
     }
 

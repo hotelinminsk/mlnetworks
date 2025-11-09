@@ -34,7 +34,7 @@ def main():
         'reg_lambda': 0.1,
         'scale_pos_weight': len(y_train[y_train == 0]) / len(y_train[y_train == 1]),
         'random_state': RANDOM_STATE,
-        'n_jobs': -1,
+        'n_jobs': 1,  # Parallelization sorununu önlemek için
         'verbose': -1,
     }
 
