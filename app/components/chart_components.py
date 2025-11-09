@@ -231,17 +231,8 @@ class ChartComponents:
         traffic: np.ndarray,
         attacks: np.ndarray
     ) -> go.Figure:
-        """Premium traffic monitoring with glassmorphism"""
-        fig = make_subplots(
-            rows=2, cols=1,
-            subplot_titles=(
-                '<b style="font-size:18px; color:#0f172a">Network Traffic Over Time</b>',
-                '<b style="font-size:18px; color:#0f172a">Attack Detection Timeline</b>'
-            ),
-            vertical_spacing=0.12,
-            row_heights=[0.65, 0.35],
-            specs=[[{"secondary_y": False}], [{"secondary_y": False}]]
-        )
+        """Premium unified traffic monitoring chart"""
+        fig = go.Figure()
         
         # Traffic line with gradient fill
         fig.add_trace(
@@ -249,22 +240,49 @@ class ChartComponents:
                 x=timestamps,
                 y=traffic,
                 mode='lines',
-                name='Traffic Volume',
+                name='Network Traffic',
                 line=dict(
                     color=MODERN_COLORS['primary'],
-                    width=4,
+                    width=3,
                     shape='spline',
                     smoothing=1.3
                 ),
                 fill='tozeroy',
-                fillcolor=f"rgba(99, 102, 241, 0.15)",
+                fillcolor=f"rgba(99, 102, 241, 0.2)",
                 hovertemplate='<b>Traffic Volume</b><br>' +
                              'Time: %{x|%H:%M:%S}<br>' +
                              'Packets/sec: %{y:.0f}<extra></extra>',
-                showlegend=True
-            ),
-            row=1, col=1
+                showlegend=True,
+                yaxis='y1'
+            )
         )
+        
+        # Attack markers on the same chart (using secondary y-axis for visibility)
+        attack_times = [timestamps[i] for i in range(len(attacks)) if attacks[i] == 1]
+        attack_traffic = [traffic[i] for i in range(len(attacks)) if attacks[i] == 1]
+        
+        if len(attack_times) > 0:
+            fig.add_trace(
+                go.Scatter(
+                    x=attack_times,
+                    y=attack_traffic,
+                    mode='markers',
+                    name='Attack Detected',
+                    marker=dict(
+                        color=MODERN_COLORS['danger'],
+                        size=16,
+                        symbol='x',
+                        line=dict(color='white', width=2),
+                        opacity=0.9
+                    ),
+                    hovertemplate='<b>🚨 ATTACK DETECTED</b><br>' +
+                                 'Time: %{x|%H:%M:%S}<br>' +
+                                 'Traffic: %{y:.0f} pkt/s<br>' +
+                                 'Severity: High<extra></extra>',
+                    showlegend=True,
+                    yaxis='y1'
+                )
+            )
         
         # Threshold line
         fig.add_hline(
@@ -272,47 +290,19 @@ class ChartComponents:
             line=dict(
                 dash="dash",
                 color=MODERN_COLORS['warning'],
-                width=3
+                width=2,
+                opacity=0.6
             ),
-            annotation_text=f"<b>Threshold: {TRAFFIC_THRESHOLD}</b>",
+            annotation_text=f"Threshold: {TRAFFIC_THRESHOLD}",
             annotation=dict(
-                font=dict(size=12, color=MODERN_COLORS['warning'], family='Inter'),
-                bgcolor='rgba(255, 255, 255, 0.95)',
+                font=dict(size=11, color=MODERN_COLORS['warning'], family='Inter'),
+                bgcolor='rgba(0, 0, 0, 0.7)',
                 bordercolor=MODERN_COLORS['warning'],
-                borderwidth=2
+                borderwidth=1,
+                borderpad=4
             ),
-            annotation_position="right",
-            row=1, col=1
+            annotation_position="right"
         )
-        
-        # Attack markers with modern style
-        attack_times = [timestamps[i] for i in range(len(attacks)) if attacks[i] == 1]
-        attack_values = [1] * len(attack_times)
-        
-        if len(attack_times) > 0:
-            fig.add_trace(
-                go.Scatter(
-                    x=attack_times,
-                    y=attack_values,
-                    mode='markers+text',
-                    name='Attack Detected',
-                    marker=dict(
-                        color=MODERN_COLORS['danger'],
-                        size=24,
-                        symbol='diamond',
-                        line=dict(color='white', width=3),
-                        opacity=0.95
-                    ),
-                    text=['!'] * len(attack_times),
-                    textposition="middle center",
-                    textfont=dict(size=14, color='white'),
-                    hovertemplate='<b>ATTACK DETECTED</b><br>' +
-                                 'Time: %{x|%H:%M:%S}<br>' +
-                                 'Severity: <b>High</b><extra></extra>',
-                    showlegend=True
-                ),
-                row=2, col=1
-            )
         
         # Update axes with modern styling
         fig.update_xaxes(
