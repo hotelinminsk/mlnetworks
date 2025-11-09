@@ -13,6 +13,7 @@ import sys
 from datetime import datetime, timedelta
 import time
 from typing import Dict, Any
+import streamlit.components.v1 as components
 
 # Project root
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +39,17 @@ from src.config import DATA_PROCESSED
 # Page configuration
 st.set_page_config(**PAGE_CONFIG)
 
+# Load Lucide Icons
+def load_lucide():
+    components.html("""
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <script>
+            setTimeout(function() {
+                lucide.createIcons();
+            }, 100);
+        </script>
+    """, height=0)
+
 # Custom CSS
 st.markdown("""
 <style>
@@ -49,6 +61,10 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         padding: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
     }
     .stTabs [data-baseweb="tab-list"] {
         gap: 24px;
@@ -83,9 +99,10 @@ def load_test_data():
 def render_header(models: Dict[str, Any], X_test: pd.DataFrame) -> None:
     """Header bölümünü render et"""
     st.markdown(
-        '<p class="main-header">🔒 Network Intrusion Detection System</p>',
+        '<div class="main-header"><i data-lucide="shield" style="width:50px;height:50px;"></i>Network Intrusion Detection System</div>',
         unsafe_allow_html=True
     )
+    load_lucide()
     st.markdown(
         f"<p style='text-align: center; color: #666;'>"
         f"Gerçek Zamanlı Ağ Saldırı Tespiti | {len(models)} Model Aktif | {len(X_test):,} Test Örneği</p>",
@@ -182,30 +199,33 @@ def render_sidebar(
 ) -> str:
     """Sidebar'ı render et ve seçilen model adını döndür"""
     with st.sidebar:
-        st.markdown("### ⚙️ Sistem Kontrolleri")
+        st.markdown('<div style="display:flex;align-items:center;gap:10px;font-size:1.3rem;font-weight:600;"><i data-lucide="settings" style="width:24px;height:24px;"></i><span>Sistem Kontrolleri</span></div>', unsafe_allow_html=True)
+        load_lucide()
         
         model_name = st.selectbox(
-            "🎯 Model Seçimi",
+            "Model Seçimi",
             list(models.keys()),
             index=DEFAULT_MODEL_INDEX if DEFAULT_MODEL_INDEX < len(models) else 0,
             help="Farklı algoritmaları test edin"
         )
         
         threshold = st.slider(
-            "🎚️ Karar Eşiği",
+            "Karar Eşiği",
             THRESHOLD_MIN, THRESHOLD_MAX, DEFAULT_THRESHOLD, THRESHOLD_STEP,
             help="Saldırı tespiti için minimum olasılık"
         )
         
         st.markdown("---")
-        st.markdown("### 📊 Hızlı İstatistikler")
+        st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.1rem;font-weight:600;"><i data-lucide="bar-chart-2" style="width:20px;height:20px;"></i><span>Hızlı İstatistikler</span></div>', unsafe_allow_html=True)
+        load_lucide()
         
         MetricsDisplay.display_summary_stats(y_test)
         
         st.markdown("---")
-        st.markdown("### 🏆 Model Durumu")
-        st.success(f"✅ {len(models)} Model Yüklü")
-        st.info(f"🎯 Aktif: {models[model_name]['icon']} {model_name}")
+        st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.1rem;font-weight:600;"><i data-lucide="award" style="width:20px;height:20px;"></i><span>Model Durumu</span></div>', unsafe_allow_html=True)
+        load_lucide()
+        st.success(f"✓ {len(models)} Model Yüklü")
+        st.info(f"Aktif: {models[model_name]['icon']} {model_name}")
         
         return model_name, threshold
 
@@ -218,12 +238,14 @@ def render_live_demo_tab(
     threshold: float
 ) -> None:
     """Canlı demo tab'ını render et"""
-    st.markdown("## 🎬 İnteraktif Tahmin Demo")
+    st.markdown('<div style="display:flex;align-items:center;gap:10px;font-size:1.8rem;font-weight:600;"><i data-lucide="play-circle" style="width:32px;height:32px;color:#6366f1;"></i><span>İnteraktif Tahmin Demo</span></div>', unsafe_allow_html=True)
+    load_lucide()
     
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.markdown("### 🎮 Test Parametreleri")
+        st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:600;"><i data-lucide="sliders" style="width:24px;height:24px;"></i><span>Test Parametreleri</span></div>', unsafe_allow_html=True)
+        load_lucide()
         
         demo_mode = st.radio(
             "Demo Modu:",
@@ -253,7 +275,7 @@ def render_live_demo_tab(
         st.markdown("---")
         compare_models = st.checkbox("🆚 Tüm Modelleri Karşılaştır", value=False)
         
-        if st.button("🚀 TAHMİN YAP!", type="primary", use_container_width=True, key="predict_btn"):
+        if st.button("TAHMİN YAP!", type="primary", use_container_width=True, key="predict_btn"):
             # Select samples
             if "Normal" in traffic_type:
                 indices = np.where(y_test == 0)[0]
@@ -291,10 +313,12 @@ def render_live_demo_tab(
                 }
     
     with col2:
-        st.markdown("### 📊 Tahmin Sonuçları")
+        st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:600;"><i data-lucide="bar-chart-3" style="width:24px;height:24px;"></i><span>Tahmin Sonuçları</span></div>', unsafe_allow_html=True)
+        load_lucide()
         
         if 'comparison_results' in st.session_state:
-            st.markdown("#### 🆚 Model Karşılaştırması")
+            st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.1rem;font-weight:600;"><i data-lucide="git-compare" style="width:20px;height:20px;"></i><span>Model Karşılaştırması</span></div>', unsafe_allow_html=True)
+            load_lucide()
             for m_name, res in st.session_state['comparison_results'].items():
                 accuracy = np.mean(res['predictions'] == res['true']) * 100
                 st.markdown(f"**{model_service._models[m_name]['icon']} {m_name}**")
@@ -317,13 +341,13 @@ def render_live_demo_tab(
                 
                 # Result card
                 if pred == 1 and correct:
-                    st.error(f"🔴 **SALDIRI TESPİT EDİLDİ!**\n\nOlasılık: {prob*100:.1f}% | Sonuç: ✅ Doğru")
+                    st.error(f"**SALDIRI TESPİT EDİLDİ!**\n\nOlasılık: {prob*100:.1f}% | Sonuç: ✓ Doğru")
                 elif pred == 1 and not correct:
-                    st.warning(f"⚠️ **YANLIŞLIKLA ALARM!**\n\nOlasılık: {prob*100:.1f}% | Sonuç: ❌ False Positive")
+                    st.warning(f"**YANLIŞLIKLA ALARM!**\n\nOlasılık: {prob*100:.1f}% | Sonuç: ✗ False Positive")
                 elif pred == 0 and correct:
-                    st.success(f"🟢 **NORMAL TRAFİK**\n\nOlasılık: {prob*100:.1f}% | Sonuç: ✅ Doğru")
+                    st.success(f"**NORMAL TRAFİK**\n\nOlasılık: {prob*100:.1f}% | Sonuç: ✓ Doğru")
                 else:
-                    st.error(f"🚨 **SALDIRI KAÇIRILDI!**\n\nOlasılık: {prob*100:.1f}% | Sonuç: ❌ False Negative")
+                    st.error(f"**SALDIRI KAÇIRILDI!**\n\nOlasılık: {prob*100:.1f}% | Sonuç: ✗ False Negative")
             
             else:
                 # Batch/Simulation - summary stats
@@ -348,7 +372,7 @@ def render_live_demo_tab(
                 st.plotly_chart(fig, use_container_width=True)
         
         else:
-            st.info("👈 Soldaki panelden 'TAHMİN YAP!' butonuna basın!")
+            st.info("Soldaki panelden 'TAHMİN YAP!' butonuna basın!")
 
 
 def render_realtime_monitoring_tab(
@@ -359,14 +383,15 @@ def render_realtime_monitoring_tab(
     threshold: float
 ) -> None:
     """Real-time monitoring tab'ını render et"""
-    st.markdown("## 📊 Real-Time Monitoring & Alert System")
+    st.markdown('<div style="display:flex;align-items:center;gap:10px;font-size:1.8rem;font-weight:600;"><i data-lucide="activity" style="width:32px;height:32px;color:#ef4444;"></i><span>Real-Time Monitoring & Alert System</span></div>', unsafe_allow_html=True)
+    load_lucide()
     
     monitoring_service = MonitoringService()
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        if st.button("🔄 Yeni Monitoring Başlat", key="monitoring", type="primary"):
+        if st.button("Yeni Monitoring Başlat", key="monitoring", type="primary"):
             # Generate time series
             data = monitoring_service.generate_traffic_data(
                 n_points=MONITORING_POINTS,
@@ -376,7 +401,7 @@ def render_realtime_monitoring_tab(
             st.session_state['monitoring_start_time'] = datetime.now()
     
     with col2:
-        auto_refresh = st.checkbox("🔁 Auto-Refresh", value=False, key="auto_refresh")
+        auto_refresh = st.checkbox("Auto-Refresh", value=False, key="auto_refresh")
         if auto_refresh:
             refresh_interval = st.slider(
                 "Refresh (sn):",
@@ -428,35 +453,35 @@ def render_realtime_monitoring_tab(
         with met_col1:
             delta = np.random.randint(-500, 1000)
             st.metric(
-                "🌐 Toplam Trafik",
+                "Toplam Trafik",
                 f"{int(metrics['total_traffic']):,}",
                 delta=f"{delta:+d} pkt"
             )
         with met_col2:
             delta_attack = np.random.choice(['+', '-']) + str(np.random.randint(1, 5))
             st.metric(
-                "🚨 Saldırı Sayısı",
+                "Saldırı Sayısı",
                 metrics['attack_count'],
                 delta=delta_attack
             )
         with met_col3:
             delta_rate = np.random.choice(['+', '-']) + f"{np.random.uniform(0.5, 2):.1f}%"
             st.metric(
-                "📊 Saldırı Oranı",
+                "Saldırı Oranı",
                 f"{metrics['attack_rate']:.1f}%",
                 delta=delta_rate
             )
         with met_col4:
             delta_latency = f"-{np.random.uniform(0.1, 0.5):.2f}ms"
             st.metric(
-                "⚡ Avg Latency",
+                "Avg Latency",
                 f"{metrics['avg_latency']:.2f}ms",
                 delta=delta_latency
             )
         with met_col5:
             delta_detection = f"+{np.random.uniform(0.1, 0.8):.1f}%"
             st.metric(
-                "🎯 Detection Rate",
+                "Detection Rate",
                 f"{metrics['detection_rate']:.1f}%",
                 delta=delta_detection
             )
@@ -473,7 +498,8 @@ def render_realtime_monitoring_tab(
         
         # Alert Panel
         if metrics['attack_count'] > 0:
-            st.markdown("### 🚨 Recent Alerts")
+            st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:600;margin-top:1rem;"><i data-lucide="alert-triangle" style="width:24px;height:24px;color:#ef4444;"></i><span>Recent Alerts</span></div>', unsafe_allow_html=True)
+            load_lucide()
             
             alert_col1, alert_col2 = st.columns([3, 1])
             
@@ -487,7 +513,7 @@ def render_realtime_monitoring_tab(
                 
                 for idx, (t, a) in enumerate(recent_attacks[:3]):  # En fazla 3 alert
                     st.error(
-                        f"⚠️ **ALERT #{idx+1}** | "
+                        f"**ALERT #{idx+1}** | "
                         f"Time: {t.strftime('%H:%M:%S')} | "
                         f"Threat: High | "
                         f"Action: Blocked"
@@ -501,13 +527,13 @@ def render_realtime_monitoring_tab(
                 )
                 
                 if threat_level == "Low":
-                    st.success(f"🟢 {threat_level}\n\n{threat_percentage}%")
+                    st.success(f"{threat_level}\n\n{threat_percentage}%")
                 elif threat_level == "Medium":
-                    st.warning(f"🟡 {threat_level}\n\n{threat_percentage}%")
+                    st.warning(f"{threat_level}\n\n{threat_percentage}%")
                 else:
-                    st.error(f"🔴 {threat_level}\n\n{threat_percentage}%")
+                    st.error(f"{threat_level}\n\n{threat_percentage}%")
     else:
-        st.info("👆 'Yeni Monitoring Başlat' butonuna basın!")
+        st.info("'Yeni Monitoring Başlat' butonuna basın!")
 
 
 def main():
@@ -518,7 +544,7 @@ def main():
         models = model_service.load_all_models()
         
         if not models:
-            st.error("❌ Modeller bulunamadı. Lütfen modelleri eğitin: `make train_ensemble`")
+            st.error("Modeller bulunamadı. Lütfen modelleri eğitin: `make train_ensemble`")
             return
         
         # Load test data
