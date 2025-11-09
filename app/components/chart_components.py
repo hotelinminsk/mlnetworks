@@ -90,7 +90,7 @@ class ChartComponents:
             ]
         
         fig = go.Figure(go.Indicator(
-            mode="gauge+number+delta+indicator",
+            mode="gauge+number+delta",
             value=value * 100,
             domain={'x': [0, 1], 'y': [0, 1]},
             title={
