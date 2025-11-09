@@ -573,14 +573,24 @@ def main():
         # Render performance metrics
         render_performance_metrics(model_service, model_name, X_test, y_test, threshold)
         
-        # Main Tabs
+        # Main Tabs with Lucide Icons
+        tab_labels = [
+            '<div style="display:flex;align-items:center;gap:6px;"><i data-lucide="play-circle" style="width:18px;height:18px;"></i><span>Canlı Demo</span></div>',
+            '<div style="display:flex;align-items:center;gap:6px;"><i data-lucide="activity" style="width:18px;height:18px;"></i><span>Real-Time Monitoring</span></div>',
+            '<div style="display:flex;align-items:center;gap:6px;"><i data-lucide="trophy" style="width:18px;height:18px;"></i><span>Model Karşılaştırma</span></div>',
+            '<div style="display:flex;align-items:center;gap:6px;"><i data-lucide="search" style="width:18px;height:18px;"></i><span>Saldırı Analizi</span></div>',
+            '<div style="display:flex;align-items:center;gap:6px;"><i data-lucide="trending-up" style="width:18px;height:18px;"></i><span>Performans Detayları</span></div>',
+            '<div style="display:flex;align-items:center;gap:6px;"><i data-lucide="brain" style="width:18px;height:18px;"></i><span>Feature Importance</span></div>'
+        ]
+        
+        # Note: Streamlit tabs don't support HTML, so we'll use simple text with CSS
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-                "Canlı Demo",
-                "Real-Time Monitoring",
-                "Model Karşılaştırma",
-                "Saldırı Analizi",
-                "Performans Detayları",
-                "Feature Importance"
+                "▶️ Canlı Demo",
+                "📊 Real-Time Monitoring",
+                "🏆 Model Karşılaştırma",
+                "🔍 Saldırı Analizi",
+                "📈 Performans Detayları",
+                "🧠 Feature Importance"
             ])
         
         # TAB 1: Live Demo
