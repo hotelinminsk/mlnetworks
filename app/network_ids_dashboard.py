@@ -435,16 +435,16 @@ def render_realtime_monitoring_tab(
         if monitoring_active:
             refresh_interval = st.select_slider(
                 "Refresh:",
-                options=[1, 2, 3, 5],
-                value=2,
-                format_func=lambda x: f"{x}s",
+                options=[0.5, 1, 2, 3],
+                value=1,
+                format_func=lambda x: f"{x}s" if x >= 1 else f"{int(x*1000)}ms",
                 key="refresh_interval"
             )
     
     if 'monitoring_data' in st.session_state:
         data = st.session_state['monitoring_data']
         
-        # Auto-refresh logic - update data in background
+        # Auto-refresh logic - update data in background for real-time monitoring
         if monitoring_active:
             if 'last_refresh' not in st.session_state:
                 st.session_state['last_refresh'] = datetime.now()
@@ -452,16 +452,32 @@ def render_realtime_monitoring_tab(
             elapsed = (datetime.now() - st.session_state['last_refresh']).total_seconds()
             
             if elapsed >= refresh_interval:
-                # Generate new data point
+                # Generate multiple new data points for smoother animation
                 last_timestamp = data['timestamps'][-1]
-                new_point = monitoring_service.generate_live_update(last_timestamp)
+                num_new_points = max(1, int(refresh_interval * 2))  # More points for faster refresh
+                
+                new_timestamps = []
+                new_totals = []
+                new_normals = []
+                new_attacks = []
+                new_attack_traffics = []
+                
+                current_timestamp = last_timestamp
+                for _ in range(num_new_points):
+                    new_point = monitoring_service.generate_live_update(current_timestamp)
+                    new_timestamps.append(new_point['timestamp'])
+                    new_totals.append(new_point['total'])
+                    new_normals.append(new_point['normal'])
+                    new_attacks.append(new_point['attack'])
+                    new_attack_traffics.append(new_point['attack_traffic'])
+                    current_timestamp = new_point['timestamp']
                 
                 # Update data with rolling window
-                data['timestamps'].append(new_point['timestamp'])
-                data['total'] = np.append(data['total'], new_point['total'])
-                data['normal'] = np.append(data['normal'], new_point['normal'])
-                data['attacks'] = np.append(data['attacks'], new_point['attack'])
-                data['attack_traffic'] = np.append(data['attack_traffic'], new_point['attack_traffic'])
+                data['timestamps'].extend(new_timestamps)
+                data['total'] = np.append(data['total'], new_totals)
+                data['normal'] = np.append(data['normal'], new_normals)
+                data['attacks'] = np.append(data['attacks'], new_attacks)
+                data['attack_traffic'] = np.append(data['attack_traffic'], new_attack_traffics)
                 
                 # Keep last MONITORING_POINTS
                 if len(data['timestamps']) > MONITORING_POINTS:
@@ -474,23 +490,24 @@ def render_realtime_monitoring_tab(
                 st.session_state['monitoring_data'] = data
                 st.session_state['last_refresh'] = datetime.now()
                 
-                # Sleep briefly then rerun for smooth update
-                time.sleep(0.1)
+                # Immediate rerun for real-time feel
                 st.rerun()
         
         metrics = monitoring_service.calculate_metrics(data)
         
         st.markdown("---")
         
-        # Status indicator
+        # Status indicator with real-time countdown
         if monitoring_active:
+            remaining = max(0, refresh_interval - elapsed)
+            remaining_display = f"{remaining:.1f}s" if remaining >= 1 else f"{int(remaining*1000)}ms"
             st.markdown(
-                f'<div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(16,185,129,0.1);border-radius:6px;margin-bottom:15px;">'
-                f'<div style="width:8px;height:8px;background:#10b981;border-radius:50%;animation:pulse 2s infinite;"></div>'
-                f'<span style="color:#10b981;font-weight:600;">● Live Monitoring Active</span>'
-                f'<span style="color:#64748b;margin-left:auto;">Next update in {int(refresh_interval - elapsed)}s</span>'
+                f'<div style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(16,185,129,0.15);border-radius:8px;margin-bottom:15px;border-left:4px solid #10b981;">'
+                f'<div style="width:10px;height:10px;background:#10b981;border-radius:50%;animation:pulse 1s infinite;"></div>'
+                f'<span style="color:#10b981;font-weight:700;font-size:14px;">● LIVE MONITORING</span>'
+                f'<span style="color:#64748b;margin-left:auto;font-size:12px;">Next: {remaining_display}</span>'
                 f'</div>'
-                f'<style>@keyframes pulse {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.5; }} }}</style>',
+                f'<style>@keyframes pulse {{ 0%, 100% {{ opacity: 1; transform: scale(1); }} 50% {{ opacity: 0.6; transform: scale(1.2); }} }}</style>',
                 unsafe_allow_html=True
             )
         
@@ -539,14 +556,15 @@ def render_realtime_monitoring_tab(
                 delta=delta_detection
             )
         
-        # Chart in placeholder
+        # Chart in placeholder - use static key for smoother updates
         with chart_placeholder.container():
             fig = ChartComponents.create_traffic_monitoring_chart(
                 data['timestamps'],
                 data['total'],
                 data['attacks']
             )
-            st.plotly_chart(fig, use_container_width=True, key=f"traffic_chart_{datetime.now().timestamp()}")
+            # Use static key to prevent chart recreation on every update
+            st.plotly_chart(fig, use_container_width=True, key="realtime_traffic_chart")
         
         # Alert Panel in placeholder
         with alerts_placeholder.container():
