@@ -460,8 +460,16 @@ def render_realtime_monitoring_tab(
         data = st.session_state['monitoring_data']
         metrics = monitoring_service.calculate_metrics(data)
         
+        st.markdown("---")
+        
+        # Create placeholders for dynamic content
+        metrics_placeholder = st.empty()
+        chart_placeholder = st.empty()
+        alerts_placeholder = st.empty()
+        
         # Real-time metrics dashboard
-        met_col1, met_col2, met_col3, met_col4, met_col5 = st.columns(5)
+        with metrics_placeholder.container():
+            met_col1, met_col2, met_col3, met_col4, met_col5 = st.columns(5)
         
         with met_col1:
             delta = np.random.randint(-500, 1000)
@@ -498,7 +506,7 @@ def render_realtime_monitoring_tab(
                 f"{metrics['detection_rate']:.1f}%",
                 delta=delta_detection
             )
-
+        
         # Chart in placeholder
         with chart_placeholder.container():
             fig = ChartComponents.create_traffic_monitoring_chart(
