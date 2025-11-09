@@ -13,17 +13,14 @@ env/
 .ipynb_checkpoints
 
 # Data files
-*.csv
+
 *.tsv
 *.log
 *.dat
 *.parquet
 
-# Model files (large - don't commit)
-models/*.joblib
-models/*.pkl
-models/*.h5
-models/*.pth
+# Model files - now committed to repo
+# models/*.joblib  # Commented out - models are now in repo
 
 # MLflow tracking
 mlruns/
@@ -48,3 +45,6 @@ Thumbs.db
 
 data/
 .cursor/
+
+# Processed data (too large for GitHub - can be regenerated)
+processed/
