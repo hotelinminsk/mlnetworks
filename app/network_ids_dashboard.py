@@ -498,19 +498,19 @@ def render_realtime_monitoring_tab(
                 f"{metrics['detection_rate']:.1f}%",
                 delta=delta_detection
             )
+
+        # Chart in placeholder
+        with chart_placeholder.container():
+            fig = ChartComponents.create_traffic_monitoring_chart(
+                data['timestamps'],
+                data['total'],
+                data['attacks']
+            )
+            st.plotly_chart(fig, use_container_width=True, key=f"traffic_chart_{datetime.now().timestamp()}")
         
-        st.markdown("---")
-        
-        # Traffic chart
-        fig = ChartComponents.create_traffic_monitoring_chart(
-            data['timestamps'],
-            data['total'],
-            data['attacks']
-        )
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Alert Panel
-        if metrics['attack_count'] > 0:
+        # Alert Panel in placeholder
+        with alerts_placeholder.container():
+            if metrics['attack_count'] > 0:
             st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:600;margin-top:1rem;"><i data-lucide="alert-triangle" style="width:24px;height:24px;color:#ef4444;"></i><span>Recent Alerts</span></div>', unsafe_allow_html=True)
             
             alert_col1, alert_col2 = st.columns([3, 1])
