@@ -470,8 +470,9 @@ def render_realtime_monitoring_tab(
                 if 'full_timestamps' in data and current_index < len(data['full_timestamps']):
                     # Get next data point from pre-generated data
                     next_index = current_index
+                    timestamp = data['full_timestamps'][next_index]
                     new_point = {
-                        'timestamp': data['full_timestamps'][next_index],
+                        'timestamp': timestamp.isoformat() if isinstance(timestamp, datetime) else str(timestamp),
                         'total': float(data['full_total'][next_index]),
                         'attack': int(data['full_attacks'][next_index]),
                         'attack_traffic': float(data['full_attack_traffic'][next_index])
