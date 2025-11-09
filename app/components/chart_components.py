@@ -284,14 +284,13 @@ class ChartComponents:
                 )
             )
         
-        # Threshold line
+        # Threshold line (using rgba for opacity)
         fig.add_hline(
             y=TRAFFIC_THRESHOLD,
             line=dict(
                 dash="dash",
-                color=MODERN_COLORS['warning'],
-                width=2,
-                opacity=0.6
+                color='rgba(245, 158, 11, 0.6)',  # warning color with opacity
+                width=2
             ),
             annotation_text=f"Threshold: {TRAFFIC_THRESHOLD}",
             annotation=dict(
