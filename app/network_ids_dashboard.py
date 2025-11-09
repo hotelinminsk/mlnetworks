@@ -119,14 +119,15 @@ def render_performance_metrics(
     threshold: float
 ) -> None:
     """Performans metriklerini render et"""
-    st.markdown("### 📊 Sistem Performansı")
+    st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:600;"><i data-lucide="trending-up" style="width:24px;height:24px;"></i><span>Sistem Performansı</span></div>', unsafe_allow_html=True)
+    load_lucide()
     
     # Get model predictions with error handling
     try:
         y_proba = model_service.predict_proba(model_name, X_test)
         y_pred = model_service.predict(model_name, X_test, threshold)
     except Exception as e:
-        st.error(f"❌ Model tahmin hatası: {str(e)}")
+        st.error(f"Model tahmin hatası: {str(e)}")
         st.info("Lütfen farklı bir model seçin veya modelleri yeniden eğitin.")
         return
     
@@ -143,7 +144,7 @@ def render_performance_metrics(
                         padding: 20px; border-radius: 10px; color: white; text-align: center;">
                 <h2 style="margin: 0; font-size: 2.5rem;">{metrics['roc_auc']:.4f}</h2>
                 <p style="margin: 5px 0 0 0; opacity: 0.9;">ROC AUC Score</p>
-                <small style="opacity: 0.7;">✨ {model_name}</small>
+                <small style="opacity: 0.7;">{model_name}</small>
             </div>
             """,
             unsafe_allow_html=True
@@ -156,7 +157,7 @@ def render_performance_metrics(
                         padding: 20px; border-radius: 10px; color: white; text-align: center;">
                 <h2 style="margin: 0; font-size: 2.5rem;">{int(threshold*100)}%</h2>
                 <p style="margin: 5px 0 0 0; opacity: 0.9;">Threshold</p>
-                <small style="opacity: 0.7;">🎯 Decision Threshold</small>
+                <small style="opacity: 0.7;">Decision Threshold</small>
             </div>
             """,
             unsafe_allow_html=True
@@ -170,7 +171,7 @@ def render_performance_metrics(
                         padding: 20px; border-radius: 10px; color: white; text-align: center;">
                 <h2 style="margin: 0; font-size: 2.5rem;">~{fp_per_day}</h2>
                 <p style="margin: 5px 0 0 0; opacity: 0.9;">Yanlış Alarm/Gün</p>
-                <small style="opacity: 0.7;">📉 False Positives</small>
+                <small style="opacity: 0.7;">False Positives</small>
             </div>
             """,
             unsafe_allow_html=True
@@ -183,7 +184,7 @@ def render_performance_metrics(
                         padding: 20px; border-radius: 10px; color: white; text-align: center;">
                 <h2 style="margin: 0; font-size: 2.5rem;">{metrics['recall']*100:.1f}%</h2>
                 <p style="margin: 5px 0 0 0; opacity: 0.9;">Recall</p>
-                <small style="opacity: 0.7;">🎯 Saldırı Bulma</small>
+                <small style="opacity: 0.7;">Saldırı Bulma</small>
             </div>
             """,
             unsafe_allow_html=True
@@ -249,7 +250,7 @@ def render_live_demo_tab(
         
         demo_mode = st.radio(
             "Demo Modu:",
-            ["🎯 Tek Örnek Test", "🔄 Batch Tahmin", "🎲 Rastgele Simülasyon"],
+            ["Tek Örnek Test", "Batch Tahmin", "Rastgele Simülasyon"],
             help="Farklı test modları"
         )
         
@@ -329,7 +330,7 @@ def render_live_demo_tab(
         elif 'results' in st.session_state:
             res = st.session_state['results']
             
-            if res['mode'] == "🎯 Tek Örnek Test":
+            if res['mode'] == "Tek Örnek Test":
                 # Single prediction - gauge
                 prob = res['proba'][0]
                 pred = res['pred'][0]
@@ -559,14 +560,14 @@ def main():
         # Render performance metrics
         render_performance_metrics(model_service, model_name, X_test, y_test, threshold)
         
-        # Main Tabs
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-            "🎬 Canlı Demo",
-            "📊 Real-Time Monitoring",
-            "🏆 Model Karşılaştırma",
-            "🔍 Saldırı Analizi",
-            "📈 Performans Detayları",
-            "🧠 Feature Importance"
+    # Main Tabs
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+            "Canlı Demo",
+            "Real-Time Monitoring",
+            "Model Karşılaştırma",
+            "Saldırı Analizi",
+            "Performans Detayları",
+            "Feature Importance"
         ])
         
         # TAB 1: Live Demo
@@ -577,16 +578,16 @@ def main():
         with tab2:
             render_realtime_monitoring_tab(model_service, model_name, X_test, y_test, threshold)
         with tab3:
-            st.info("🏆 Model Comparison - Implementation in progress")
+            st.info("Model Comparison - Implementation in progress")
         with tab4:
-            st.info("🔍 Attack Analysis - Implementation in progress")
+            st.info("Attack Analysis - Implementation in progress")
         with tab5:
-            st.info("📈 Performance Details - Implementation in progress")
+            st.info("Performance Details - Implementation in progress")
         with tab6:
-            st.info("🧠 Feature Importance - Implementation in progress")
+            st.info("Feature Importance - Implementation in progress")
     
     except Exception as e:
-        st.error(f"❌ Hata: {str(e)}")
+        st.error(f"Hata: {str(e)}")
         st.info("Modelleri eğitin: `make train_ensemble`")
         import traceback
         st.code(traceback.format_exc())

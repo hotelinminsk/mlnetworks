@@ -13,27 +13,27 @@ DATA_PROCESSED_DIR = ROOT / "data" / "processed"
 MODEL_CONFIGS = {
     "Isolation Forest": {
         "file": "isolation_forest.joblib",
-        "icon": "🌲",
+        "icon": "tree-deciduous",
         "type": "anomaly"
     },
     "SGD Classifier": {
         "file": "supervised_sgd.joblib",
-        "icon": "⚡",
+        "icon": "zap",
         "type": "linear"
     },
     "Random Forest": {
         "file": "random_forest.joblib",
-        "icon": "🌳",
+        "icon": "trees",
         "type": "ensemble"
     },
     "Gradient Boosting": {
         "file": "gradient_boosting.joblib",
-        "icon": "🚀",
+        "icon": "rocket",
         "type": "ensemble"
     },
     "Extra Trees": {
         "file": "extra_trees.joblib",
-        "icon": "🌴",
+        "icon": "tree-palm",
         "type": "ensemble"
     },
 }
@@ -47,7 +47,7 @@ DEFAULT_TOP_N_FEATURES = 20
 # UI Configuration
 PAGE_CONFIG = {
     "page_title": "Network IDS",
-    "page_icon": "🔒",
+    "page_icon": "🛡️",
     "layout": "wide",
     "initial_sidebar_state": "expanded"
 }

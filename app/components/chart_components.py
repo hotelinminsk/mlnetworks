@@ -160,7 +160,7 @@ class ChartComponents:
         # Normal traffic - gradient effect
         fig.add_trace(go.Histogram(
             x=proba_normal,
-            name='🟢 Normal Traffic',
+            name='Normal Traffic',
             opacity=0.85,
             marker=dict(
                 color=MODERN_COLORS['success'],
@@ -176,7 +176,7 @@ class ChartComponents:
         # Attack traffic - gradient effect
         fig.add_trace(go.Histogram(
             x=proba_attack,
-            name='🔴 Attack Traffic',
+            name='Attack Traffic',
             opacity=0.85,
             marker=dict(
                 color=MODERN_COLORS['danger'],
@@ -235,8 +235,8 @@ class ChartComponents:
         fig = make_subplots(
             rows=2, cols=1,
             subplot_titles=(
-                '<b style="font-size:18px; color:#0f172a">📈 Network Traffic Over Time</b>',
-                '<b style="font-size:18px; color:#0f172a">🚨 Attack Detection Timeline</b>'
+                '<b style="font-size:18px; color:#0f172a">Network Traffic Over Time</b>',
+                '<b style="font-size:18px; color:#0f172a">Attack Detection Timeline</b>'
             ),
             vertical_spacing=0.12,
             row_heights=[0.65, 0.35],
@@ -249,7 +249,7 @@ class ChartComponents:
                 x=timestamps,
                 y=traffic,
                 mode='lines',
-                name='🌐 Traffic Volume',
+                name='Traffic Volume',
                 line=dict(
                     color=MODERN_COLORS['primary'],
                     width=4,
@@ -274,7 +274,7 @@ class ChartComponents:
                 color=MODERN_COLORS['warning'],
                 width=3
             ),
-            annotation_text=f"<b>⚠️ Threshold: {TRAFFIC_THRESHOLD}</b>",
+            annotation_text=f"<b>Threshold: {TRAFFIC_THRESHOLD}</b>",
             annotation=dict(
                 font=dict(size=12, color=MODERN_COLORS['warning'], family='Inter'),
                 bgcolor='rgba(255, 255, 255, 0.95)',
@@ -295,7 +295,7 @@ class ChartComponents:
                     x=attack_times,
                     y=attack_values,
                     mode='markers+text',
-                    name='🚨 Attack Detected',
+                    name='Attack Detected',
                     marker=dict(
                         color=MODERN_COLORS['danger'],
                         size=24,
@@ -303,10 +303,10 @@ class ChartComponents:
                         line=dict(color='white', width=3),
                         opacity=0.95
                     ),
-                    text=['⚠️'] * len(attack_times),
+                    text=['!'] * len(attack_times),
                     textposition="middle center",
                     textfont=dict(size=14, color='white'),
-                    hovertemplate='<b>🚨 ATTACK DETECTED</b><br>' +
+                    hovertemplate='<b>ATTACK DETECTED</b><br>' +
                                  'Time: %{x|%H:%M:%S}<br>' +
                                  'Severity: <b>High</b><extra></extra>',
                     showlegend=True
