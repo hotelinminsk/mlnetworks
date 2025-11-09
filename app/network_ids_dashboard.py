@@ -258,7 +258,13 @@ def render_live_demo_tab(
     threshold: float
 ) -> None:
     """Canlı demo tab'ını render et"""
-    st.markdown('<div style="display:flex;align-items:center;gap:10px;font-size:1.8rem;font-weight:600;"><i data-lucide="play-circle" style="width:32px;height:32px;color:#6366f1;"></i><span>İnteraktif Tahmin Demo</span></div>', unsafe_allow_html=True)
+    # Tab header with Lucide icon
+    st.markdown("""
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:15px;background:linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.1) 100%);border-radius:10px;border-left:4px solid #6366f1;">
+        <i data-lucide="play-circle" style="width:32px;height:32px;color:#6366f1;"></i>
+        <span style="font-size:1.8rem;font-weight:600;color:#0f172a;">İnteraktif Tahmin Demo</span>
+    </div>
+    """, unsafe_allow_html=True)
     
     col1, col2 = st.columns([1, 1])
     
@@ -399,7 +405,13 @@ def render_realtime_monitoring_tab(
     threshold: float
 ) -> None:
     """Real-time monitoring tab'ını render et"""
-    st.markdown('<div style="display:flex;align-items:center;gap:10px;font-size:1.8rem;font-weight:600;"><i data-lucide="activity" style="width:32px;height:32px;color:#ef4444;"></i><span>Real-Time Monitoring & Alert System</span></div>', unsafe_allow_html=True)
+    # Tab header with Lucide icon
+    st.markdown("""
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:15px;background:linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(220,38,38,0.1) 100%);border-radius:10px;border-left:4px solid #ef4444;">
+        <i data-lucide="activity" style="width:32px;height:32px;color:#ef4444;"></i>
+        <span style="font-size:1.8rem;font-weight:600;color:#0f172a;">Real-Time Monitoring & Alert System</span>
+    </div>
+    """, unsafe_allow_html=True)
     
     monitoring_service = MonitoringService()
     
@@ -573,24 +585,14 @@ def main():
         # Render performance metrics
         render_performance_metrics(model_service, model_name, X_test, y_test, threshold)
         
-        # Main Tabs with Lucide Icons
-        tab_labels = [
-            '<div style="display:flex;align-items:center;gap:6px;"><i data-lucide="play-circle" style="width:18px;height:18px;"></i><span>Canlı Demo</span></div>',
-            '<div style="display:flex;align-items:center;gap:6px;"><i data-lucide="activity" style="width:18px;height:18px;"></i><span>Real-Time Monitoring</span></div>',
-            '<div style="display:flex;align-items:center;gap:6px;"><i data-lucide="trophy" style="width:18px;height:18px;"></i><span>Model Karşılaştırma</span></div>',
-            '<div style="display:flex;align-items:center;gap:6px;"><i data-lucide="search" style="width:18px;height:18px;"></i><span>Saldırı Analizi</span></div>',
-            '<div style="display:flex;align-items:center;gap:6px;"><i data-lucide="trending-up" style="width:18px;height:18px;"></i><span>Performans Detayları</span></div>',
-            '<div style="display:flex;align-items:center;gap:6px;"><i data-lucide="brain" style="width:18px;height:18px;"></i><span>Feature Importance</span></div>'
-        ]
-        
-        # Note: Streamlit tabs don't support HTML, so we'll use simple text with CSS
+        # Main Tabs (Streamlit tabs don't support HTML/icons in labels)
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-                "▶️ Canlı Demo",
-                "📊 Real-Time Monitoring",
-                "🏆 Model Karşılaştırma",
-                "🔍 Saldırı Analizi",
-                "📈 Performans Detayları",
-                "🧠 Feature Importance"
+                "Canlı Demo",
+                "Real-Time Monitoring",
+                "Model Karşılaştırma",
+                "Saldırı Analizi",
+                "Performans Detayları",
+                "Feature Importance"
             ])
         
         # TAB 1: Live Demo
@@ -600,14 +602,46 @@ def main():
         # TAB 2: Real-Time Monitoring
         with tab2:
             render_realtime_monitoring_tab(model_service, model_name, X_test, y_test, threshold)
+        
+        # TAB 3: Model Comparison
         with tab3:
-            st.info("Model Comparison - Implementation in progress")
+            st.markdown("""
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:15px;background:linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.1) 100%);border-radius:10px;border-left:4px solid #10b981;">
+                <i data-lucide="trophy" style="width:32px;height:32px;color:#10b981;"></i>
+                <span style="font-size:1.8rem;font-weight:600;color:#0f172a;">Model Karşılaştırma</span>
+            </div>
+            """, unsafe_allow_html=True)
+            st.info("Implementation in progress")
+        
+        # TAB 4: Attack Analysis
         with tab4:
-            st.info("Attack Analysis - Implementation in progress")
+            st.markdown("""
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:15px;background:linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(217,119,6,0.1) 100%);border-radius:10px;border-left:4px solid #f59e0b;">
+                <i data-lucide="search" style="width:32px;height:32px;color:#f59e0b;"></i>
+                <span style="font-size:1.8rem;font-weight:600;color:#0f172a;">Saldırı Analizi</span>
+            </div>
+            """, unsafe_allow_html=True)
+            st.info("Implementation in progress")
+        
+        # TAB 5: Performance Details
         with tab5:
-            st.info("Performance Details - Implementation in progress")
+            st.markdown("""
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:15px;background:linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.1) 100%);border-radius:10px;border-left:4px solid #3b82f6;">
+                <i data-lucide="bar-chart-2" style="width:32px;height:32px;color:#3b82f6;"></i>
+                <span style="font-size:1.8rem;font-weight:600;color:#0f172a;">Performans Detayları</span>
+            </div>
+            """, unsafe_allow_html=True)
+            st.info("Implementation in progress")
+        
+        # TAB 6: Feature Importance
         with tab6:
-            st.info("Feature Importance - Implementation in progress")
+            st.markdown("""
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:15px;background:linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(124,58,237,0.1) 100%);border-radius:10px;border-left:4px solid #8b5cf6;">
+                <i data-lucide="brain" style="width:32px;height:32px;color:#8b5cf6;"></i>
+                <span style="font-size:1.8rem;font-weight:600;color:#0f172a;">Feature Importance</span>
+            </div>
+            """, unsafe_allow_html=True)
+            st.info("Implementation in progress")
     
     except Exception as e:
         st.error(f"Hata: {str(e)}")
