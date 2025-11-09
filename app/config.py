@@ -85,23 +85,44 @@ COLOR_GRADIENT_1 = "#667eea"
 COLOR_GRADIENT_2 = "#764ba2"
 
 MODERN_COLORS = {
-    'primary': '#667eea',
-    'secondary': '#764ba2',
-    'success': '#10b981',
-    'danger': '#ef4444',
-    'warning': '#f59e0b',
-    'info': '#3b82f6',
-    'light': '#f8fafc',
-    'dark': '#1e293b',
-    'gradient_start': '#667eea',
-    'gradient_end': '#764ba2',
+    # Premium Gradients
+    'primary': '#6366f1',        # Indigo-500
+    'primary_dark': '#4f46e5',   # Indigo-600
+    'secondary': '#8b5cf6',      # Violet-500
+    'secondary_dark': '#7c3aed', # Violet-600
+    
+    # Semantic Colors
+    'success': '#10b981',        # Emerald-500
+    'success_light': '#34d399',  # Emerald-400
+    'danger': '#ef4444',         # Red-500
+    'danger_light': '#f87171',   # Red-400
+    'warning': '#f59e0b',        # Amber-500
+    'warning_light': '#fbbf24',  # Amber-400
+    'info': '#3b82f6',           # Blue-500
+    'info_light': '#60a5fa',     # Blue-400
+    
+    # Neutrals
+    'light': '#f8fafc',          # Slate-50
+    'dark': '#0f172a',           # Slate-900
+    'gray': '#64748b',           # Slate-500
+    'gray_light': '#94a3b8',     # Slate-400
+    'gray_dark': '#334155',      # Slate-700
+    
+    # Specific Use Cases
+    'gradient_start': '#6366f1',
+    'gradient_end': '#8b5cf6',
     'normal_traffic': '#10b981',
     'attack_traffic': '#ef4444',
     'background': '#f8fafc',
-    'grid': '#e2e8f0',
-    'plot_bg': 'rgba(241, 245, 249, 0.6)',
-    'title_color': '#1e293b',
-    'label_color': '#64748b'
+    'grid': '#e5e7eb',           # Gray-200
+    'plot_bg': 'rgba(248, 250, 252, 0.8)',
+    'title_color': '#0f172a',
+    'label_color': '#64748b',
+    
+    # Chart Specific
+    'chart_bg': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'glass_bg': 'rgba(255, 255, 255, 0.1)',
+    'shadow': 'rgba(99, 102, 241, 0.1)'
 }
 
 # Animation settings

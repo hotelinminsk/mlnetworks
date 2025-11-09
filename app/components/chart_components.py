@@ -1,11 +1,12 @@
 """
-Chart Components - Modern & Interactive Visualizations
-SOLID: Single Responsibility - Grafik oluşturma bileşenleri
+Chart Components - Premium Modern Visualizations
+Professional-grade charts with modern UI/UX principles
 """
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.express as px
 import numpy as np
+import pandas as pd
 from typing import List, Optional, Tuple
 from datetime import datetime
 
@@ -19,10 +20,14 @@ from app.config import (
     COLOR_NORMAL, COLOR_ATTACK, TRAFFIC_THRESHOLD, MODERN_COLORS
 )
 
-# Modern chart templates
+# Premium Modern Layout Template
 MODERN_LAYOUT = {
-    'font': {'family': "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", 'size': 12, 'color': MODERN_COLORS['label_color']},
-    'plot_bgcolor': MODERN_COLORS['plot_bg'],
+    'font': {
+        'family': "Inter, -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        'size': 13,
+        'color': MODERN_COLORS['label_color']
+    },
+    'plot_bgcolor': 'rgba(248, 250, 252, 0.5)',
     'paper_bgcolor': 'rgba(0,0,0,0)',
     'hovermode': 'x unified',
     'showlegend': True,
@@ -32,45 +37,34 @@ MODERN_LAYOUT = {
         'y': 1.02,
         'xanchor': 'right',
         'x': 1,
-        'bgcolor': 'rgba(255,255,255,0.8)',
-        'bordercolor': 'rgba(0,0,0,0.1)',
+        'bgcolor': 'rgba(255, 255, 255, 0.95)',
+        'bordercolor': MODERN_COLORS['grid'],
         'borderwidth': 1,
-        'font': {'size': 11}
+        'font': {'size': 12, 'color': MODERN_COLORS['dark']}
     },
-    'transition': {'duration': 500, 'easing': 'cubic-in-out'},
-    'title': {
-        'font': {'size': 20, 'family': "Inter, sans-serif", 'color': MODERN_COLORS['title_color']},
-        'x': 0.5,
-        'xanchor': 'center'
+    'transition': {
+        'duration': 750,
+        'easing': 'cubic-in-out'
     },
-    'xaxis': {
-        'gridcolor': MODERN_COLORS['grid'],
-        'gridwidth': 1,
-        'showgrid': True,
-        'zeroline': False,
-        'title': {'font': {'size': 14}}
-    },
-    'yaxis': {
-        'gridcolor': MODERN_COLORS['grid'],
-        'gridwidth': 1,
-        'showgrid': True,
-        'zeroline': False,
-        'title': {'font': {'size': 14}}
+    'hoverlabel': {
+        'bgcolor': 'rgba(255, 255, 255, 0.98)',
+        'bordercolor': MODERN_COLORS['primary'],
+        'font': {'size': 13, 'family': 'Inter', 'color': MODERN_COLORS['dark']}
     }
 }
 
 
 class ChartComponents:
-    """Grafik oluşturma bileşenleri"""
+    """Premium chart components with modern aesthetics"""
     
     @staticmethod
     def create_gauge_chart(
         value: float,
         threshold: float,
-        title: str = "Saldırı Olasılığı"
+        title: str = "Attack Probability"
     ) -> go.Figure:
-        """Modern gauge chart oluştur"""
-        # Risk seviyesine göre renk belirle
+        """Premium gauge chart with gradient effects"""
+        # Determine color based on risk level
         if value >= threshold:
             bar_color = MODERN_COLORS['danger']
             step_colors = [
@@ -81,7 +75,7 @@ class ChartComponents:
             bar_color = MODERN_COLORS['success']
             step_colors = [
                 {'range': [0, threshold*100], 'color': MODERN_COLORS['success']},
-                {'range': [threshold*100, 100], 'color': '#fee2e2'}
+                {'range': [threshold*100, 100], 'color': 'rgba(239, 68, 68, 0.2)'}
             ]
         
         fig = go.Figure(go.Indicator(
@@ -89,52 +83,54 @@ class ChartComponents:
             value=value * 100,
             domain={'x': [0, 1], 'y': [0, 1]},
             title={
-                'text': title,
-                'font': {'size': 18, 'family': "Inter, sans-serif", 'color': MODERN_COLORS['title_color']}
+                'text': f"<b>{title}</b>",
+                'font': {'size': 20, 'family': 'Inter', 'color': MODERN_COLORS['dark']}
             },
             delta={
                 'reference': threshold * 100,
                 'increasing': {'color': MODERN_COLORS['danger']},
                 'decreasing': {'color': MODERN_COLORS['success']},
-                'font': {'size': 14}
+                'font': {'size': 16}
             },
             number={
-                'font': {'size': 32, 'family': "Inter, sans-serif", 'color': MODERN_COLORS['title_color']},
-                'suffix': '%'
+                'font': {'size': 42, 'family': 'Inter', 'color': MODERN_COLORS['dark']},
+                'suffix': '%',
+                'valueformat': '.2f'
             },
             gauge={
                 'axis': {
                     'range': [None, 100],
-                    'tickwidth': 1,
-                    'tickcolor': MODERN_COLORS['label_color'],
-                    'tickfont': {'size': 11, 'color': MODERN_COLORS['label_color']},
-                    'nticks': 5
+                    'tickwidth': 2,
+                    'tickcolor': MODERN_COLORS['gray_light'],
+                    'tickfont': {'size': 12, 'color': MODERN_COLORS['gray']},
+                    'nticks': 6
                 },
                 'bar': {
                     'color': bar_color,
-                    'thickness': 0.3
+                    'thickness': 0.35,
+                    'line': {'color': 'white', 'width': 2}
                 },
-                'bgcolor': 'rgba(255, 255, 255, 0.7)',
-                'borderwidth': 2,
+                'bgcolor': 'rgba(255, 255, 255, 0.95)',
+                'borderwidth': 3,
                 'bordercolor': MODERN_COLORS['grid'],
                 'steps': step_colors,
                 'threshold': {
                     'line': {
                         'color': MODERN_COLORS['dark'],
-                        'width': 3
+                        'width': 4
                     },
-                    'thickness': 0.8,
+                    'thickness': 0.85,
                     'value': threshold * 100
                 }
             }
         ))
         
         fig.update_layout(
-            height=350,
-            margin=dict(l=20, r=20, t=40, b=20),
+            height=380,
+            margin=dict(l=30, r=30, t=60, b=30),
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
-            font={'family': "Inter, sans-serif"}
+            font={'family': 'Inter'}
         )
         
         return fig
@@ -144,67 +140,74 @@ class ChartComponents:
         proba_normal: np.ndarray,
         proba_attack: np.ndarray,
         threshold: float,
-        title: str = "Olasılık Dağılımı"
+        title: str = "Probability Distribution"
     ) -> go.Figure:
-        """Modern olasılık dağılım grafiği oluştur"""
+        """Premium probability distribution with modern styling"""
         fig = go.Figure()
         
-        # Normal trafik - gradient efektli
+        # Normal traffic - gradient effect
         fig.add_trace(go.Histogram(
             x=proba_normal,
-            name='🟢 Normal Trafik',
-            opacity=0.8,
+            name='🟢 Normal Traffic',
+            opacity=0.85,
             marker=dict(
-                color=MODERN_COLORS['normal_traffic'],
-                line=dict(color=MODERN_COLORS['light'], width=1)
+                color=MODERN_COLORS['success'],
+                line=dict(color='white', width=2),
+                pattern=dict(shape="")
             ),
             nbinsx=50,
-            hovertemplate='<b>Normal Trafik</b><br>' +
-                         'Olasılık: %{x:.3f}<br>' +
-                         'Sayı: %{y}<extra></extra>'
+            hovertemplate='<b>Normal Traffic</b><br>' +
+                         'Probability: %{x:.3f}<br>' +
+                         'Count: %{y}<extra></extra>'
         ))
         
-        # Saldırı trafiği - gradient efektli
+        # Attack traffic - gradient effect
         fig.add_trace(go.Histogram(
             x=proba_attack,
-            name='🔴 Saldırı Trafiği',
-            opacity=0.8,
+            name='🔴 Attack Traffic',
+            opacity=0.85,
             marker=dict(
-                color=MODERN_COLORS['attack_traffic'],
-                line=dict(color=MODERN_COLORS['light'], width=1)
+                color=MODERN_COLORS['danger'],
+                line=dict(color='white', width=2),
+                pattern=dict(shape="")
             ),
             nbinsx=50,
-            hovertemplate='<b>Saldırı Trafiği</b><br>' +
-                         'Olasılık: %{x:.3f}<br>' +
-                         'Sayı: %{y}<extra></extra>'
+            hovertemplate='<b>Attack Traffic</b><br>' +
+                         'Probability: %{x:.3f}<br>' +
+                         'Count: %{y}<extra></extra>'
         ))
         
-        # Threshold çizgisi - modern stil
+        # Threshold line with annotation
         fig.add_vline(
             x=threshold,
             line=dict(
                 dash="dashdot",
-                color=MODERN_COLORS['dark'],
-                width=3
+                color=MODERN_COLORS['primary'],
+                width=4
             ),
-            annotation_text=f"<b>Eşik: {threshold:.3f}</b>",
+            annotation_text=f"<b>Threshold: {threshold:.3f}</b>",
             annotation=dict(
-                font=dict(size=12, color=MODERN_COLORS['dark']),
-                bgcolor=MODERN_COLORS['plot_bg'],
-                bordercolor=MODERN_COLORS['grid'],
-                borderwidth=1,
-                borderpad=4
+                font=dict(size=13, color=MODERN_COLORS['dark'], family='Inter'),
+                bgcolor='rgba(255, 255, 255, 0.95)',
+                bordercolor=MODERN_COLORS['primary'],
+                borderwidth=2,
+                borderpad=6
             ),
             annotation_position="top right"
         )
         
         # Modern layout
         fig.update_layout(
-            title_text=title,
-            xaxis_title_text="Saldırı Olasılığı",
-            yaxis_title_text="Örnek Sayısı",
+            title=dict(
+                text=f"<b>{title}</b>",
+                font=dict(size=22, family='Inter', color=MODERN_COLORS['dark']),
+                x=0.5,
+                xanchor='center'
+            ),
+            xaxis_title="<b>Attack Probability</b>",
+            yaxis_title="<b>Sample Count</b>",
             barmode='overlay',
-            height=450,
+            height=480,
             **MODERN_LAYOUT
         )
         
@@ -216,19 +219,19 @@ class ChartComponents:
         traffic: np.ndarray,
         attacks: np.ndarray
     ) -> go.Figure:
-        """Modern trafik monitoring grafiği oluştur"""
+        """Premium traffic monitoring with glassmorphism"""
         fig = make_subplots(
             rows=2, cols=1,
             subplot_titles=(
-                '<b style="font-size:16px; color:#1e293b">📈 Network Traffic Over Time</b>',
-                '<b style="font-size:16px; color:#1e293b">🚨 Attack Detection Timeline</b>'
+                '<b style="font-size:18px; color:#0f172a">📈 Network Traffic Over Time</b>',
+                '<b style="font-size:18px; color:#0f172a">🚨 Attack Detection Timeline</b>'
             ),
-            vertical_spacing=0.15,
+            vertical_spacing=0.12,
             row_heights=[0.65, 0.35],
             specs=[[{"secondary_y": False}], [{"secondary_y": False}]]
         )
         
-        # Traffic line - gradient fill ile
+        # Traffic line with gradient fill
         fig.add_trace(
             go.Scatter(
                 x=timestamps,
@@ -237,12 +240,12 @@ class ChartComponents:
                 name='🌐 Traffic Volume',
                 line=dict(
                     color=MODERN_COLORS['primary'],
-                    width=3,
+                    width=4,
                     shape='spline',
                     smoothing=1.3
                 ),
                 fill='tozeroy',
-                fillcolor=f"rgba(102, 126, 234, 0.2)",
+                fillcolor=f"rgba(99, 102, 241, 0.15)",
                 hovertemplate='<b>Traffic Volume</b><br>' +
                              'Time: %{x|%H:%M:%S}<br>' +
                              'Packets/sec: %{y:.0f}<extra></extra>',
@@ -251,26 +254,26 @@ class ChartComponents:
             row=1, col=1
         )
         
-        # Threshold line - modern stil
+        # Threshold line
         fig.add_hline(
             y=TRAFFIC_THRESHOLD,
             line=dict(
-                dash="dashdot",
+                dash="dash",
                 color=MODERN_COLORS['warning'],
-                width=2.5
+                width=3
             ),
-            annotation_text=f"<b>Threshold: {TRAFFIC_THRESHOLD}</b>",
+            annotation_text=f"<b>⚠️ Threshold: {TRAFFIC_THRESHOLD}</b>",
             annotation=dict(
-                font=dict(size=11, color=MODERN_COLORS['warning']),
-                bgcolor=MODERN_COLORS['plot_bg'],
+                font=dict(size=12, color=MODERN_COLORS['warning'], family='Inter'),
+                bgcolor='rgba(255, 255, 255, 0.95)',
                 bordercolor=MODERN_COLORS['warning'],
-                borderwidth=1
+                borderwidth=2
             ),
             annotation_position="right",
             row=1, col=1
         )
         
-        # Attack markers - modern stil
+        # Attack markers with modern style
         attack_times = [timestamps[i] for i in range(len(attacks)) if attacks[i] == 1]
         attack_values = [1] * len(attack_times)
         
@@ -283,35 +286,37 @@ class ChartComponents:
                     name='🚨 Attack Detected',
                     marker=dict(
                         color=MODERN_COLORS['danger'],
-                        size=20,
-                        symbol='x-thin',
-                        line=dict(color=MODERN_COLORS['light'], width=3),
-                        opacity=0.9
+                        size=24,
+                        symbol='diamond',
+                        line=dict(color='white', width=3),
+                        opacity=0.95
                     ),
-                    text=['🚨'] * len(attack_times),
+                    text=['⚠️'] * len(attack_times),
                     textposition="middle center",
-                    textfont=dict(size=12, color=MODERN_COLORS['light']),
+                    textfont=dict(size=14, color='white'),
                     hovertemplate='<b>🚨 ATTACK DETECTED</b><br>' +
                                  'Time: %{x|%H:%M:%S}<br>' +
-                                 'Severity: High<extra></extra>',
+                                 'Severity: <b>High</b><extra></extra>',
                     showlegend=True
                 ),
                 row=2, col=1
             )
         
-        # Axis updates - modern stil
+        # Update axes with modern styling
         fig.update_xaxes(
             title_text="<b>Time</b>",
+            title_font=dict(size=14, color=MODERN_COLORS['dark']),
             gridcolor=MODERN_COLORS['grid'],
-            gridwidth=1,
+            gridwidth=1.5,
             showgrid=True,
             row=2, col=1
         )
         
         fig.update_yaxes(
             title_text="<b>Packets/sec</b>",
+            title_font=dict(size=14, color=MODERN_COLORS['dark']),
             gridcolor=MODERN_COLORS['grid'],
-            gridwidth=1,
+            gridwidth=1.5,
             showgrid=True,
             zeroline=False,
             row=1, col=1
@@ -319,19 +324,20 @@ class ChartComponents:
         
         fig.update_yaxes(
             title_text="<b>Events</b>",
+            title_font=dict(size=14, color=MODERN_COLORS['dark']),
             range=[0, 1.5],
             gridcolor=MODERN_COLORS['grid'],
-            gridwidth=1,
+            gridwidth=1.5,
             showgrid=True,
             zeroline=False,
             row=2, col=1
         )
         
-        # Modern layout
+        # Premium layout
         layout_config = MODERN_LAYOUT.copy()
         layout_config.update({
-            'height': 650,
-            'margin': dict(l=50, r=30, t=60, b=50),
+            'height': 700,
+            'margin': dict(l=60, r=40, t=80, b=60),
         })
         fig.update_layout(**layout_config)
         
@@ -341,42 +347,102 @@ class ChartComponents:
     def create_roc_curve(
         fpr: np.ndarray,
         tpr: np.ndarray,
-        auc: float,
+        auc_score: float,
+        model_name: str,
         title: str = "ROC Curve"
     ) -> go.Figure:
-        """Modern ROC curve grafiği oluştur"""
+        """Premium ROC curve with modern styling"""
         fig = go.Figure()
         
-        # ROC curve - gradient line
+        # ROC curve with gradient fill
         fig.add_trace(go.Scatter(
             x=fpr,
             y=tpr,
             mode='lines',
-            name=f'ROC AUC = {auc:.3f}',
-            line=dict(color=MODERN_COLORS['primary'], width=3.5, shape='spline'),
+            name=f'ROC (AUC = {auc_score:.3f})',
+            line=dict(
+                color=MODERN_COLORS['primary'],
+                width=4,
+                shape='spline'
+            ),
             fill='tozeroy',
-            fillcolor=f"rgba(102, 126, 234, 0.2)",
-            hovertemplate='FPR: %{x:.3f}<br>TPR: %{y:.3f}<extra></extra>'
+            fillcolor=f"rgba(99, 102, 241, 0.2)",
+            hovertemplate='<b>ROC Curve</b><br>' +
+                         'FPR: %{x:.3f}<br>' +
+                         'TPR: %{y:.3f}<extra></extra>'
         ))
         
-        # Diagonal line (random classifier)
+        # Random classifier line
         fig.add_trace(go.Scatter(
             x=[0, 1],
             y=[0, 1],
             mode='lines',
-            name='Random Classifier',
-            line=dict(color=MODERN_COLORS['label_color'], width=2, dash='dash'),
+            name='Random',
+            line=dict(
+                color=MODERN_COLORS['gray_light'],
+                width=2.5,
+                dash='dash'
+            ),
             hovertemplate='Random Classifier<extra></extra>'
         ))
         
-        # Modern layout
+        # Premium layout
         fig.update_layout(
-            title_text=title,
-            xaxis_title_text="False Positive Rate",
-            yaxis_title_text="True Positive Rate",
+            title=dict(
+                text=f"<b>{title} - {model_name}</b>",
+                font=dict(size=22, family='Inter', color=MODERN_COLORS['dark']),
+                x=0.5,
+                xanchor='center'
+            ),
+            xaxis_title="<b>False Positive Rate</b>",
+            yaxis_title="<b>True Positive Rate</b>",
             xaxis_range=[0, 1],
             yaxis_range=[0, 1],
-            height=450,
+            height=500,
+            **MODERN_LAYOUT
+        )
+        
+        return fig
+    
+    @staticmethod
+    def create_precision_recall_curve(
+        precision: np.ndarray,
+        recall: np.ndarray,
+        model_name: str,
+        title: str = "Precision-Recall Curve"
+    ) -> go.Figure:
+        """Premium PR curve"""
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatter(
+            x=recall,
+            y=precision,
+            mode='lines',
+            name=f'{model_name}',
+            line=dict(
+                color=MODERN_COLORS['secondary'],
+                width=4,
+                shape='spline'
+            ),
+            fill='tozeroy',
+            fillcolor=f"rgba(139, 92, 246, 0.2)",
+            hovertemplate='<b>PR Curve</b><br>' +
+                         'Recall: %{x:.3f}<br>' +
+                         'Precision: %{y:.3f}<extra></extra>'
+        ))
+        
+        fig.update_layout(
+            title=dict(
+                text=f"<b>{title} - {model_name}</b>",
+                font=dict(size=22, family='Inter', color=MODERN_COLORS['dark']),
+                x=0.5,
+                xanchor='center'
+            ),
+            xaxis_title="<b>Recall</b>",
+            yaxis_title="<b>Precision</b>",
+            xaxis_range=[0, 1],
+            yaxis_range=[0, 1],
+            height=500,
             **MODERN_LAYOUT
         )
         
@@ -388,34 +454,126 @@ class ChartComponents:
         labels: List[str] = None,
         title: str = "Confusion Matrix"
     ) -> go.Figure:
-        """Modern confusion matrix heatmap oluştur"""
+        """Premium confusion matrix with modern color scheme"""
         if labels is None:
-            labels = ['Normal', 'Saldırı']
+            labels = ['Normal', 'Attack']
         
-        # Heatmap
+        # Modern heatmap
         fig = go.Figure(data=go.Heatmap(
             z=cm,
             x=labels,
             y=labels,
             text=cm,
-            texttemplate='%{text}',
+            texttemplate='<b>%{text}</b>',
+            textfont=dict(size=18, color='white', family='Inter'),
             colorscale='Viridis',
-            hovertemplate='Gerçek: %{y}<br>Tahmin: %{x}<br>Sayı: %{z}<extra></extra>',
+            hovertemplate='<b>Actual: %{y}</b><br>' +
+                         '<b>Predicted: %{x}</b><br>' +
+                         'Count: <b>%{z}</b><extra></extra>',
             colorbar=dict(
-                title="Count",
+                title="<b>Count</b>",
                 len=0.8,
                 thickness=20,
-                titlefont={'size': 12},
-                tickfont={'size': 11}
+                titlefont={'size': 14, 'family': 'Inter'},
+                tickfont={'size': 12}
             )
         ))
         
-        # Modern layout
         fig.update_layout(
-            title_text=title,
-            xaxis_title_text="<b>Tahmin Edilen</b>",
-            yaxis_title_text="<b>Gerçek</b>",
-            height=450,
+            title=dict(
+                text=f"<b>{title}</b>",
+                font=dict(size=22, family='Inter', color=MODERN_COLORS['dark']),
+                x=0.5,
+                xanchor='center'
+            ),
+            xaxis_title="<b>Predicted Label</b>",
+            yaxis_title="<b>True Label</b>",
+            height=500,
+            **MODERN_LAYOUT
+        )
+        
+        return fig
+    
+    @staticmethod
+    def create_feature_importance_chart(
+        importance_df: pd.DataFrame,
+        top_n: int,
+        selected_model: str,
+        title: str = "Feature Importance"
+    ) -> go.Figure:
+        """Premium feature importance with gradient bars"""
+        fig = go.Figure()
+        
+        # Top features
+        top_features = importance_df.head(top_n)[::-1]
+        
+        fig.add_trace(go.Bar(
+            y=top_features['Feature'],
+            x=top_features['Importance'],
+            orientation='h',
+            marker=dict(
+                color=top_features['Importance'],
+                colorscale='Plasma',
+                line=dict(color='white', width=2),
+                showscale=True,
+                colorbar=dict(
+                    title="<b>Score</b>",
+                    titlefont={'size': 12, 'family': 'Inter'},
+                    tickfont={'size': 11}
+                )
+            ),
+            hovertemplate='<b>%{y}</b><br>' +
+                         'Importance: %{x:.4f}<extra></extra>'
+        ))
+        
+        fig.update_layout(
+            title=dict(
+                text=f"<b>Top {top_n} Features - {selected_model}</b>",
+                font=dict(size=22, family='Inter', color=MODERN_COLORS['dark']),
+                x=0.5,
+                xanchor='center'
+            ),
+            xaxis_title="<b>Importance Score</b>",
+            yaxis_title="<b>Feature</b>",
+            height=650,
+            showlegend=False,
+            **MODERN_LAYOUT
+        )
+        
+        return fig
+    
+    @staticmethod
+    def create_feature_distribution_pie_chart(
+        group_counts: pd.Series,
+        title: str = "Feature Importance Distribution"
+    ) -> go.Figure:
+        """Premium donut chart with modern colors"""
+        colors = ['#ef4444', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6']
+        
+        fig = go.Figure(data=[go.Pie(
+            labels=group_counts.index,
+            values=group_counts.values,
+            hole=0.5,
+            marker=dict(
+                colors=colors,
+                line=dict(color='white', width=3)
+            ),
+            textinfo='percent+label',
+            textfont=dict(size=14, family='Inter', color='white'),
+            insidetextorientation='radial',
+            hovertemplate='<b>%{label}</b><br>' +
+                         'Count: %{value}<br>' +
+                         'Percentage: %{percent}<extra></extra>'
+        )])
+        
+        fig.update_layout(
+            title=dict(
+                text=f"<b>{title}</b>",
+                font=dict(size=22, family='Inter', color=MODERN_COLORS['dark']),
+                x=0.5,
+                xanchor='center'
+            ),
+            height=500,
             **MODERN_LAYOUT
         )
         
