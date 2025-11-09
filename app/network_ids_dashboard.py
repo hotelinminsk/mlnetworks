@@ -11,6 +11,7 @@ import numpy as np
 from pathlib import Path
 import sys
 from datetime import datetime, timedelta
+import time
 from typing import Dict, Any
 
 # Project root
@@ -29,6 +30,7 @@ from config import (
 )
 from services.model_service import ModelService
 from services.metrics_service import MetricsService
+from services.monitoring_service import MonitoringService
 from components.metrics_display import MetricsDisplay
 from components.chart_components import ChartComponents
 from src.config import DATA_PROCESSED
@@ -349,6 +351,165 @@ def render_live_demo_tab(
             st.info("👈 Soldaki panelden 'TAHMİN YAP!' butonuna basın!")
 
 
+def render_realtime_monitoring_tab(
+    model_service: ModelService,
+    model_name: str,
+    X_test: pd.DataFrame,
+    y_test: np.ndarray,
+    threshold: float
+) -> None:
+    """Real-time monitoring tab'ını render et"""
+    st.markdown("## 📊 Real-Time Monitoring & Alert System")
+    
+    monitoring_service = MonitoringService()
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        if st.button("🔄 Yeni Monitoring Başlat", key="monitoring", type="primary"):
+            # Generate time series
+            data = monitoring_service.generate_traffic_data(
+                n_points=MONITORING_POINTS,
+                attack_probability=0.15
+            )
+            st.session_state['monitoring_data'] = data
+            st.session_state['monitoring_start_time'] = datetime.now()
+    
+    with col2:
+        auto_refresh = st.checkbox("🔁 Auto-Refresh", value=False, key="auto_refresh")
+        if auto_refresh:
+            refresh_interval = st.slider(
+                "Refresh (sn):",
+                REFRESH_INTERVAL_MIN,
+                REFRESH_INTERVAL_MAX,
+                DEFAULT_REFRESH_INTERVAL,
+                key="refresh_interval"
+            )
+            st.info(f"Her {refresh_interval} saniyede yenilenecek")
+            
+            # Auto-refresh için Streamlit'in rerun özelliğini kullan
+            if 'last_refresh' not in st.session_state:
+                st.session_state['last_refresh'] = datetime.now()
+            
+            elapsed = (datetime.now() - st.session_state['last_refresh']).total_seconds()
+            if elapsed >= refresh_interval:
+                # Yeni veri noktası ekle
+                if 'monitoring_data' in st.session_state:
+                    data = st.session_state['monitoring_data']
+                    last_timestamp = data['timestamps'][-1]
+                    new_point = monitoring_service.generate_live_update(last_timestamp)
+                    
+                    # Veriyi güncelle (son 100 noktayı tut)
+                    data['timestamps'].append(new_point['timestamp'])
+                    data['total'] = np.append(data['total'], new_point['total'])
+                    data['normal'] = np.append(data['normal'], new_point['normal'])
+                    data['attacks'] = np.append(data['attacks'], new_point['attack'])
+                    data['attack_traffic'] = np.append(data['attack_traffic'], new_point['attack_traffic'])
+                    
+                    # Son 100 noktayı tut
+                    if len(data['timestamps']) > MONITORING_POINTS:
+                        data['timestamps'] = data['timestamps'][-MONITORING_POINTS:]
+                        data['total'] = data['total'][-MONITORING_POINTS:]
+                        data['normal'] = data['normal'][-MONITORING_POINTS:]
+                        data['attacks'] = data['attacks'][-MONITORING_POINTS:]
+                        data['attack_traffic'] = data['attack_traffic'][-MONITORING_POINTS:]
+                    
+                    st.session_state['monitoring_data'] = data
+                    st.session_state['last_refresh'] = datetime.now()
+                    st.rerun()
+    
+    if 'monitoring_data' in st.session_state:
+        data = st.session_state['monitoring_data']
+        metrics = monitoring_service.calculate_metrics(data)
+        
+        # Real-time metrics dashboard
+        met_col1, met_col2, met_col3, met_col4, met_col5 = st.columns(5)
+        
+        with met_col1:
+            delta = np.random.randint(-500, 1000)
+            st.metric(
+                "🌐 Toplam Trafik",
+                f"{int(metrics['total_traffic']):,}",
+                delta=f"{delta:+d} pkt"
+            )
+        with met_col2:
+            delta_attack = np.random.choice(['+', '-']) + str(np.random.randint(1, 5))
+            st.metric(
+                "🚨 Saldırı Sayısı",
+                metrics['attack_count'],
+                delta=delta_attack
+            )
+        with met_col3:
+            delta_rate = np.random.choice(['+', '-']) + f"{np.random.uniform(0.5, 2):.1f}%"
+            st.metric(
+                "📊 Saldırı Oranı",
+                f"{metrics['attack_rate']:.1f}%",
+                delta=delta_rate
+            )
+        with met_col4:
+            delta_latency = f"-{np.random.uniform(0.1, 0.5):.2f}ms"
+            st.metric(
+                "⚡ Avg Latency",
+                f"{metrics['avg_latency']:.2f}ms",
+                delta=delta_latency
+            )
+        with met_col5:
+            delta_detection = f"+{np.random.uniform(0.1, 0.8):.1f}%"
+            st.metric(
+                "🎯 Detection Rate",
+                f"{metrics['detection_rate']:.1f}%",
+                delta=delta_detection
+            )
+        
+        st.markdown("---")
+        
+        # Traffic chart
+        fig = ChartComponents.create_traffic_monitoring_chart(
+            data['timestamps'],
+            data['total'],
+            data['attacks']
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Alert Panel
+        if metrics['attack_count'] > 0:
+            st.markdown("### 🚨 Recent Alerts")
+            
+            alert_col1, alert_col2 = st.columns([3, 1])
+            
+            with alert_col1:
+                # Son 20 noktadaki saldırıları göster
+                recent_attacks = [
+                    (data['timestamps'][i], data['attacks'][i])
+                    for i in range(max(0, len(data['timestamps'])-20), len(data['timestamps']))
+                    if data['attacks'][i] == 1
+                ]
+                
+                for idx, (t, a) in enumerate(recent_attacks[:3]):  # En fazla 3 alert
+                    st.error(
+                        f"⚠️ **ALERT #{idx+1}** | "
+                        f"Time: {t.strftime('%H:%M:%S')} | "
+                        f"Threat: High | "
+                        f"Action: Blocked"
+                    )
+            
+            with alert_col2:
+                st.markdown("**Threat Level**")
+                threat_level, threat_percentage = monitoring_service.get_threat_level(
+                    metrics['attack_count'],
+                    len(data['attacks'])
+                )
+                
+                if threat_level == "Low":
+                    st.success(f"🟢 {threat_level}\n\n{threat_percentage}%")
+                elif threat_level == "Medium":
+                    st.warning(f"🟡 {threat_level}\n\n{threat_percentage}%")
+                else:
+                    st.error(f"🔴 {threat_level}\n\n{threat_percentage}%")
+    else:
+        st.info("👆 'Yeni Monitoring Başlat' butonuna basın!")
+
+
 def main():
     """Ana fonksiyon"""
     try:
@@ -386,9 +547,9 @@ def main():
         with tab1:
             render_live_demo_tab(model_service, model_name, X_test, y_test, threshold)
         
-        # TAB 2-6: Diğer tab'lar için placeholder (kısaltma için sadece demo tab'ı implement edildi)
+        # TAB 2: Real-Time Monitoring
         with tab2:
-            st.info("📊 Real-Time Monitoring - Implementation in progress")
+            render_realtime_monitoring_tab(model_service, model_name, X_test, y_test, threshold)
         with tab3:
             st.info("🏆 Model Comparison - Implementation in progress")
         with tab4:
