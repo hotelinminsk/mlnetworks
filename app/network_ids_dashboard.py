@@ -459,102 +459,92 @@ def render_realtime_monitoring_tab(
                 if 'current_index' not in st.session_state:
                     st.session_state['current_index'] = len(data.get('timestamps', []))
             
-            # Use Streamlit's auto-refresh for smooth updates
-            elapsed = (datetime.now() - st.session_state['last_refresh']).total_seconds()
+            # Update data from pre-generated array
+            current_index = st.session_state.get('current_index', len(data['timestamps']))
             
-            # Update data when interval passed
-            if elapsed >= refresh_interval:
-                current_index = st.session_state.get('current_index', len(data['timestamps']))
+            # Check if we have pre-generated data
+            if 'full_timestamps' in data and current_index < len(data['full_timestamps']):
+                # Get next data point from pre-generated data
+                next_index = current_index
+                timestamp = data['full_timestamps'][next_index]
                 
-                # Check if we have pre-generated data
-                if 'full_timestamps' in data and current_index < len(data['full_timestamps']):
-                    # Get next data point from pre-generated data
-                    next_index = current_index
-                    timestamp = data['full_timestamps'][next_index]
-                    
-                    # Update displayed data with rolling window
-                    data['timestamps'].append(timestamp)
-                    data['total'] = np.append(data['total'], data['full_total'][next_index])
-                    data['normal'] = np.append(data['normal'], data['full_normal'][next_index])
-                    data['attacks'] = np.append(data['attacks'], data['full_attacks'][next_index])
-                    data['attack_traffic'] = np.append(data['attack_traffic'], data['full_attack_traffic'][next_index])
-                    
-                    # Keep last MONITORING_POINTS
-                    if len(data['timestamps']) > MONITORING_POINTS:
-                        data['timestamps'] = data['timestamps'][-MONITORING_POINTS:]
-                        data['total'] = data['total'][-MONITORING_POINTS:]
-                        data['normal'] = data['normal'][-MONITORING_POINTS:]
-                        data['attacks'] = data['attacks'][-MONITORING_POINTS:]
-                        data['attack_traffic'] = data['attack_traffic'][-MONITORING_POINTS:]
-                    
-                    # Move pointer forward
-                    st.session_state['current_index'] = next_index + 1
-                    
-                    # If we reached the end, generate new data and append to array
-                    if st.session_state['current_index'] >= len(data['full_timestamps']):
-                        # Generate new batch of data (500 more points)
-                        last_timestamp = data['full_timestamps'][-1]
-                        new_batch_size = 500
-                        
-                        # Generate new timestamps
-                        new_timestamps = [
-                            last_timestamp + timedelta(minutes=i+1) 
-                            for i in range(new_batch_size)
-                        ]
-                        
-                        # Generate new traffic data
-                        base_trend = np.linspace(
-                            monitoring_service.baseline_normal,
-                            monitoring_service.baseline_normal * 1.2,
-                            new_batch_size
-                        )
-                        new_normal = np.maximum(
-                            np.random.normal(base_trend, monitoring_service.baseline_std),
-                            0
-                        )
-                        new_attacks = np.random.choice(
-                            [0, 1],
-                            new_batch_size,
-                            p=[0.85, 0.15]
-                        )
-                        new_attack_traffic = new_attacks * np.maximum(
-                            np.random.normal(300, 50, new_batch_size),
-                            0
-                        )
-                        new_total = new_normal + new_attack_traffic
-                        
-                        # Append new data to full arrays
-                        data['full_timestamps'].extend(new_timestamps)
-                        data['full_total'] = np.append(data['full_total'], new_total)
-                        data['full_normal'] = np.append(data['full_normal'], new_normal)
-                        data['full_attacks'] = np.append(data['full_attacks'], new_attacks.astype(int))
-                        data['full_attack_traffic'] = np.append(
-                            data['full_attack_traffic'],
-                            new_attack_traffic
-                        )
-                        
-                        # Keep full arrays manageable (max 2000 points)
-                        if len(data['full_timestamps']) > 2000:
-                            keep_from = len(data['full_timestamps']) - 1500
-                            data['full_timestamps'] = data['full_timestamps'][keep_from:]
-                            data['full_total'] = data['full_total'][keep_from:]
-                            data['full_normal'] = data['full_normal'][keep_from:]
-                            data['full_attacks'] = data['full_attacks'][keep_from:]
-                            data['full_attack_traffic'] = data['full_attack_traffic'][keep_from:]
-                            st.session_state['current_index'] = keep_from
+                # Update displayed data with rolling window
+                data['timestamps'].append(timestamp)
+                data['total'] = np.append(data['total'], data['full_total'][next_index])
+                data['normal'] = np.append(data['normal'], data['full_normal'][next_index])
+                data['attacks'] = np.append(data['attacks'], data['full_attacks'][next_index])
+                data['attack_traffic'] = np.append(data['attack_traffic'], data['full_attack_traffic'][next_index])
                 
-                st.session_state['monitoring_data'] = data
-                st.session_state['last_refresh'] = datetime.now()
-                st.session_state['update_counter'] = st.session_state.get('update_counter', 0) + 1
+                # Keep last MONITORING_POINTS
+                if len(data['timestamps']) > MONITORING_POINTS:
+                    data['timestamps'] = data['timestamps'][-MONITORING_POINTS:]
+                    data['total'] = data['total'][-MONITORING_POINTS:]
+                    data['normal'] = data['normal'][-MONITORING_POINTS:]
+                    data['attacks'] = data['attacks'][-MONITORING_POINTS:]
+                    data['attack_traffic'] = data['attack_traffic'][-MONITORING_POINTS:]
                 
-                # Use Streamlit's auto-refresh for smooth updates
-                time.sleep(0.1)  # Small delay for smooth transition
-                st.rerun()
+                # Move pointer forward
+                st.session_state['current_index'] = next_index + 1
+                
+                # If we reached the end, generate new data and append to array
+                if st.session_state['current_index'] >= len(data['full_timestamps']):
+                    # Generate new batch of data (500 more points)
+                    last_timestamp = data['full_timestamps'][-1]
+                    new_batch_size = 500
+                    
+                    # Generate new timestamps
+                    new_timestamps = [
+                        last_timestamp + timedelta(minutes=i+1) 
+                        for i in range(new_batch_size)
+                    ]
+                    
+                    # Generate new traffic data
+                    base_trend = np.linspace(
+                        monitoring_service.baseline_normal,
+                        monitoring_service.baseline_normal * 1.2,
+                        new_batch_size
+                    )
+                    new_normal = np.maximum(
+                        np.random.normal(base_trend, monitoring_service.baseline_std),
+                        0
+                    )
+                    new_attacks = np.random.choice(
+                        [0, 1],
+                        new_batch_size,
+                        p=[0.85, 0.15]
+                    )
+                    new_attack_traffic = new_attacks * np.maximum(
+                        np.random.normal(300, 50, new_batch_size),
+                        0
+                    )
+                    new_total = new_normal + new_attack_traffic
+                    
+                    # Append new data to full arrays
+                    data['full_timestamps'].extend(new_timestamps)
+                    data['full_total'] = np.append(data['full_total'], new_total)
+                    data['full_normal'] = np.append(data['full_normal'], new_normal)
+                    data['full_attacks'] = np.append(data['full_attacks'], new_attacks.astype(int))
+                    data['full_attack_traffic'] = np.append(
+                        data['full_attack_traffic'],
+                        new_attack_traffic
+                    )
+                    
+                    # Keep full arrays manageable (max 2000 points)
+                    if len(data['full_timestamps']) > 2000:
+                        keep_from = len(data['full_timestamps']) - 1500
+                        data['full_timestamps'] = data['full_timestamps'][keep_from:]
+                        data['full_total'] = data['full_total'][keep_from:]
+                        data['full_normal'] = data['full_normal'][keep_from:]
+                        data['full_attacks'] = data['full_attacks'][keep_from:]
+                        data['full_attack_traffic'] = data['full_attack_traffic'][keep_from:]
+                        st.session_state['current_index'] = keep_from
             
-            # Auto-refresh using Streamlit's interval (for continuous updates)
-            if monitoring_active:
-                time.sleep(refresh_interval)
-                st.rerun()
+            st.session_state['monitoring_data'] = data
+            st.session_state['update_counter'] = st.session_state.get('update_counter', 0) + 1
+            
+            # Use Streamlit's auto-refresh for continuous updates
+            time.sleep(refresh_interval)
+            st.rerun()
         
         metrics = monitoring_service.calculate_metrics(data)
         
