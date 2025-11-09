@@ -39,20 +39,35 @@ from src.config import DATA_PROCESSED
 # Page configuration
 st.set_page_config(**PAGE_CONFIG)
 
-# Load Lucide Icons
-def load_lucide():
-    components.html("""
-        <script src="https://unpkg.com/lucide@latest"></script>
-        <script>
-            setTimeout(function() {
-                lucide.createIcons();
-            }, 100);
-        </script>
-    """, height=0)
+# Lucide Icons - Load once globally
+st.markdown("""
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+    // Create icons on page load and after any DOM updates
+    document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
+    
+    // Re-create icons after Streamlit reruns
+    const observer = new MutationObserver(() => {
+        lucide.createIcons();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+</script>
+""", unsafe_allow_html=True)
 
 # Custom CSS
 st.markdown("""
 <style>
+    /* Lucide icon styling */
+    .lucide {
+        display: inline-block;
+        vertical-align: middle;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+    }
+    
     .main-header {
         font-size: 2.8rem;
         font-weight: bold;
@@ -65,6 +80,12 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         gap: 15px;
+    }
+    
+    .main-header .lucide {
+        width: 50px;
+        height: 50px;
+        stroke: #667eea;
     }
     .stTabs [data-baseweb="tab-list"] {
         gap: 24px;
@@ -99,10 +120,9 @@ def load_test_data():
 def render_header(models: Dict[str, Any], X_test: pd.DataFrame) -> None:
     """Header bölümünü render et"""
     st.markdown(
-        '<div class="main-header"><i data-lucide="shield" style="width:50px;height:50px;"></i>Network Intrusion Detection System</div>',
+        '<div class="main-header"><i data-lucide="shield"></i>Network Intrusion Detection System</div>',
         unsafe_allow_html=True
     )
-    load_lucide()
     st.markdown(
         f"<p style='text-align: center; color: #666;'>"
         f"Gerçek Zamanlı Ağ Saldırı Tespiti | {len(models)} Model Aktif | {len(X_test):,} Test Örneği</p>",
@@ -120,7 +140,6 @@ def render_performance_metrics(
 ) -> None:
     """Performans metriklerini render et"""
     st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:600;"><i data-lucide="trending-up" style="width:24px;height:24px;"></i><span>Sistem Performansı</span></div>', unsafe_allow_html=True)
-    load_lucide()
     
     # Get model predictions with error handling
     try:
@@ -201,7 +220,6 @@ def render_sidebar(
     """Sidebar'ı render et ve seçilen model adını döndür"""
     with st.sidebar:
         st.markdown('<div style="display:flex;align-items:center;gap:10px;font-size:1.3rem;font-weight:600;"><i data-lucide="settings" style="width:24px;height:24px;"></i><span>Sistem Kontrolleri</span></div>', unsafe_allow_html=True)
-        load_lucide()
         
         model_name = st.selectbox(
             "Model Seçimi",
@@ -218,15 +236,16 @@ def render_sidebar(
         
         st.markdown("---")
         st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.1rem;font-weight:600;"><i data-lucide="bar-chart-2" style="width:20px;height:20px;"></i><span>Hızlı İstatistikler</span></div>', unsafe_allow_html=True)
-        load_lucide()
         
         MetricsDisplay.display_summary_stats(y_test)
         
         st.markdown("---")
         st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.1rem;font-weight:600;"><i data-lucide="award" style="width:20px;height:20px;"></i><span>Model Durumu</span></div>', unsafe_allow_html=True)
-        load_lucide()
         st.success(f"✓ {len(models)} Model Yüklü")
-        st.info(f"Aktif: {models[model_name]['icon']} {model_name}")
+        
+        # Display active model with its icon
+        icon_html = f'<i data-lucide="{models[model_name]["icon"]}" style="width:16px;height:16px;"></i>'
+        st.markdown(f'<div style="display:flex;align-items:center;gap:6px;padding:8px;background:rgba(99,102,241,0.1);border-radius:6px;">{icon_html}<span>Aktif: {model_name}</span></div>', unsafe_allow_html=True)
         
         return model_name, threshold
 
@@ -240,13 +259,11 @@ def render_live_demo_tab(
 ) -> None:
     """Canlı demo tab'ını render et"""
     st.markdown('<div style="display:flex;align-items:center;gap:10px;font-size:1.8rem;font-weight:600;"><i data-lucide="play-circle" style="width:32px;height:32px;color:#6366f1;"></i><span>İnteraktif Tahmin Demo</span></div>', unsafe_allow_html=True)
-    load_lucide()
     
     col1, col2 = st.columns([1, 1])
     
     with col1:
         st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:600;"><i data-lucide="sliders" style="width:24px;height:24px;"></i><span>Test Parametreleri</span></div>', unsafe_allow_html=True)
-        load_lucide()
         
         demo_mode = st.radio(
             "Demo Modu:",
@@ -315,11 +332,9 @@ def render_live_demo_tab(
     
     with col2:
         st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:600;"><i data-lucide="bar-chart-3" style="width:24px;height:24px;"></i><span>Tahmin Sonuçları</span></div>', unsafe_allow_html=True)
-        load_lucide()
         
         if 'comparison_results' in st.session_state:
             st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.1rem;font-weight:600;"><i data-lucide="git-compare" style="width:20px;height:20px;"></i><span>Model Karşılaştırması</span></div>', unsafe_allow_html=True)
-            load_lucide()
             for m_name, res in st.session_state['comparison_results'].items():
                 accuracy = np.mean(res['predictions'] == res['true']) * 100
                 st.markdown(f"**{model_service._models[m_name]['icon']} {m_name}**")
@@ -385,7 +400,6 @@ def render_realtime_monitoring_tab(
 ) -> None:
     """Real-time monitoring tab'ını render et"""
     st.markdown('<div style="display:flex;align-items:center;gap:10px;font-size:1.8rem;font-weight:600;"><i data-lucide="activity" style="width:32px;height:32px;color:#ef4444;"></i><span>Real-Time Monitoring & Alert System</span></div>', unsafe_allow_html=True)
-    load_lucide()
     
     monitoring_service = MonitoringService()
     
@@ -500,7 +514,6 @@ def render_realtime_monitoring_tab(
         # Alert Panel
         if metrics['attack_count'] > 0:
             st.markdown('<div style="display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:600;margin-top:1rem;"><i data-lucide="alert-triangle" style="width:24px;height:24px;color:#ef4444;"></i><span>Recent Alerts</span></div>', unsafe_allow_html=True)
-            load_lucide()
             
             alert_col1, alert_col2 = st.columns([3, 1])
             
