@@ -560,15 +560,15 @@ def main():
         # Render performance metrics
         render_performance_metrics(model_service, model_name, X_test, y_test, threshold)
         
-    # Main Tabs
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-            "Canlı Demo",
-            "Real-Time Monitoring",
-            "Model Karşılaştırma",
-            "Saldırı Analizi",
-            "Performans Detayları",
-            "Feature Importance"
-        ])
+        # Main Tabs
+        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+                "Canlı Demo",
+                "Real-Time Monitoring",
+                "Model Karşılaştırma",
+                "Saldırı Analizi",
+                "Performans Detayları",
+                "Feature Importance"
+            ])
         
         # TAB 1: Live Demo
         with tab1:
