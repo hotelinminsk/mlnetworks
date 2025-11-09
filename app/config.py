@@ -85,6 +85,8 @@ COLOR_GRADIENT_1 = "#667eea"
 COLOR_GRADIENT_2 = "#764ba2"
 
 MODERN_COLORS = {
+    'primary': '#667eea',
+    'secondary': '#764ba2',
     'success': '#10b981',
     'danger': '#ef4444',
     'warning': '#f59e0b',
