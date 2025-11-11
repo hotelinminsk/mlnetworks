@@ -1,5 +1,6 @@
 """
-Streamlit dashboard for live UNSW-NB15 IDS demo
+FINAL COMPLETE NETWORK IDS DASHBOARD
+Presentation-Ready System with ALL Features + Attack Intelligence
 """
 import streamlit as st
 import pandas as pd
@@ -7,13 +8,13 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
-from pathlib import Path
 from datetime import datetime
+import time
+from pathlib import Path
+import sys
 from collections import deque
 from textwrap import dedent
 from sklearn.metrics import confusion_matrix, roc_curve, auc
-import sys
-import time
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -21,10 +22,9 @@ if str(ROOT) not in sys.path:
 
 from services.realtime_ids_service import RealtimeIDSService
 from services.multi_model_service import MultiModelService
-from src.config import DATA_PROCESSED
+from src.config import DATA_PROCESSED, MODELS
 
-# ---------------------------------------------------------------------------
-# Page + global theme
+# Page config
 st.set_page_config(
     page_title="Network IDS | Complete Suite",
     page_icon="IDS",
@@ -32,142 +32,239 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-st.markdown(
-    """
-    <style>
-        .stApp { background: #0b1120; color: #f8fafc; }
-        .main .block-container {
-            padding-top: 2.5rem !important;
-            padding-bottom: 2rem !important;
-            max-width: 1200px;
-            background: transparent !important;
-        }
-        .mega-header {
-            font-size: 2.6rem;
-            font-weight: 800;
-            text-align: center;
-            color: #f8fafc;
-            letter-spacing: 0.08em;
-            margin-bottom: 0.5rem;
-        }
-        .sub-title {
-            text-align: center;
-            color: #94a3b8;
-            font-size: 0.95rem;
-            letter-spacing: 0.35em;
-            text-transform: uppercase;
-            margin-bottom: 1.5rem;
-        }
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 8px; background: rgba(30,41,59,0.65);
-            padding: 0.4rem; border-radius: 8px;
-        }
-        .stTabs [data-baseweb="tab"] {
-            background: rgba(59,130,246,0.15);
-            border-radius: 6px; color: #94a3b8;
-            font-weight: 600; padding: 0.7rem 1.3rem;
-        }
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(120deg,#2563eb 0%,#1d4ed8 100%);
-            color: #f8fafc;
-        }
-        .section-title {
-            color: #d1d5db; font-size: 1.4rem; font-weight: 600;
-            margin: 1rem 0; padding-bottom: 0.4rem;
-            border-bottom: 1px solid rgba(148,163,184,0.3);
-        }
-        .stButton button {
-            background: linear-gradient(120deg,#2563eb 0%,#1d4ed8 100%);
-            color: #f8fafc; border: none; border-radius: 6px;
-            padding: 0.55rem 1.4rem; font-weight: 600;
-            box-shadow: 0 12px 20px rgba(37,99,235,0.25);
-        }
-        div[data-testid="metric-container"] {
-            background: rgba(30,41,59,0.85);
-            border: 1px solid rgba(148,163,184,0.3);
-            border-radius: 12px; padding: 1.2rem 1rem;
-            box-shadow: 0 10px 30px rgba(15,23,42,0.35);
-        }
-        div[data-testid="metric-container"] label { color: #94a3b8 !important; font-size: 0.8rem !important; font-weight: 600 !important; }
-        div[data-testid="metric-container"] [data-testid="stMetricValue"] { color: #f8fafc !important; font-size: 1.6rem !important; font-weight: 700 !important; }
-        .attack-detail {
-            background: rgba(30,41,59,0.9);
-            border: 1px solid rgba(248,113,113,0.4);
-            border-radius: 12px; padding: 1.5rem;
-            margin: 1rem 0; box-shadow: 0 10px 28px rgba(0,0,0,0.35);
-        }
-        .attack-header { font-size: 1.6rem; font-weight: 700; color: #fca5a5; margin-bottom: 1rem; }
-        .attack-info-row {
-            background: rgba(15,23,42,0.65);
-            padding: 0.9rem 1rem; border-radius: 8px;
-            margin: 0.5rem 0; border-left: 4px solid rgba(248,113,113,0.6);
-        }
-        .attack-label { color: #fda4af; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.08em; }
-        .attack-value { color: #f8fafc; font-size: 1rem; font-weight: 500; margin-top: 0.3rem; }
-        .traffic-feed {
-            background: rgba(15,23,42,0.85);
-            border: 1px solid rgba(148,163,184,0.2);
-            border-radius: 12px; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-        }
-        .traffic-row {
-            display: grid; grid-template-columns: 110px 1fr 110px 120px 110px;
-            gap: 0.5rem; padding: 0.75rem 1rem; align-items: center;
-            font-size: 0.9rem;
-        }
-        .traffic-row + .traffic-row { border-top: 1px solid rgba(148,163,184,0.15); }
-        .traffic-row.header {
-            text-transform: uppercase; font-size: 0.7rem;
-            letter-spacing: 0.2em; color: #94a3b8;
-            background: rgba(15,23,42,0.95);
-            border-bottom: 1px solid rgba(148,163,184,0.2);
-        }
-        .traffic-row.attack { background: rgba(248,113,113,0.08); border-left: 4px solid rgba(248,113,113,0.8); }
-        .traffic-row.normal { background: rgba(34,197,94,0.05); border-left: 4px solid rgba(34,197,94,0.7); }
-        .traffic-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .traffic-status { font-weight: 700; letter-spacing: 0.05em; }
-        .traffic-status.attack { color: #f87171; }
-        .traffic-status.normal { color: #34d399; }
-        .alert-feed { display: flex; flex-direction: column; gap: 0.6rem; }
-        .alert-card {
-            padding: 0.9rem 1.1rem; border-radius: 10px;
-            background: rgba(15,23,42,0.9);
-            border-left: 4px solid #38bdf8;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            color: #e2e8f0;
-        }
-        .alert-card.critical { border-color: #ef4444; }
-        .alert-card.high { border-color: #f97316; }
-        .alert-card.medium { border-color: #fbbf24; }
-        .alert-card.low { border-color: #22c55e; }
-        .alert-card-title { font-weight: 700; margin-bottom: 0.2rem; }
-        .alert-card-meta { font-size: 0.75rem; color: #cbd5f5; }
-        .model-info-card {
-            background: rgba(15,23,42,0.8);
-            border: 1px solid rgba(59,130,246,0.4);
-            border-radius: 12px; padding: 1rem 1.2rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.25);
-        }
-        .model-info-title { font-weight: 700; color: #93c5fd; margin-bottom: 0.6rem; }
-        .model-info-body { color: #e2e8f0; line-height: 1.5; }
-        .packet-detail {
-            background: rgba(15,23,42,0.8);
-            border: 1px solid rgba(59,130,246,0.35);
-            border-radius: 12px; padding: 1rem 1.2rem;
-            margin-bottom: 1rem; box-shadow: 0 8px 20px rgba(0,0,0,0.35);
-        }
-        .packet-detail h4 { margin: 0 0 0.5rem 0; font-size: 1.05rem; color: #cbd5f5; }
-        .packet-row { font-size: 0.9rem; color: #e2e8f0; margin: 0.25rem 0; }
-        #MainMenu {visibility: hidden;} footer {visibility: hidden;}
-        ::-webkit-scrollbar { width: 10px; background: rgba(30,41,59,0.6); }
-        ::-webkit-scrollbar-thumb { background: linear-gradient(120deg,#2563eb,#1d4ed8); border-radius: 5px; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+# PROFESSIONAL DARK THEME + ATTACK DETAIL STYLING
+st.markdown("""
 
-# ---------------------------------------------------------------------------
-# Session state init
+<style>
+    .stApp {
+        background: linear-gradient(140deg, #0f172a 0%, #1f2937 70%);
+        color: #e5e7eb;
+    }
+
+    .main .block-container {
+        padding-top: 2.5rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 1200px;
+        background: transparent !important;
+    }
+
+    .mega-header {
+        font-size: 2.6rem;
+        font-weight: 800;
+        text-align: center;
+        color: #e5e7eb;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.5rem;
+    }
+
+    .sub-title {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 0.95rem;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        margin-bottom: 1.5rem;
+    }
+
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background: rgba(30, 41, 59, 0.65);
+        padding: 0.4rem;
+        border-radius: 8px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 6px;
+        color: #94a3b8;
+        font-weight: 600;
+        padding: 0.7rem 1.3rem;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(120deg, #2563eb 0%, #1d4ed8 100%);
+        color: #f8fafc;
+    }
+
+    div[data-testid="metric-container"] {
+        background: rgba(30, 41, 59, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 12px;
+        padding: 1.2rem 1rem;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.35);
+    }
+
+    div[data-testid="metric-container"] label {
+        color: #94a3b8 !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+    }
+
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] {
+        color: #e5e7eb !important;
+        font-size: 1.6rem !important;
+        font-weight: 700 !important;
+    }
+
+    .stButton button {
+        background: linear-gradient(120deg, #2563eb 0%, #1d4ed8 100%);
+        color: #f8fafc;
+        border: none;
+        border-radius: 6px;
+        padding: 0.55rem 1.4rem;
+        font-weight: 600;
+        box-shadow: 0 12px 20px rgba(37, 99, 235, 0.25);
+    }
+
+    .section-title {
+        color: #d1d5db;
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin: 1rem 0;
+        padding-bottom: 0.4rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .attack-detail {
+        background: rgba(30, 41, 59, 0.9);
+        border: 1px solid rgba(248, 113, 113, 0.4);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    .attack-header {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #fca5a5;
+        margin-bottom: 1rem;
+    }
+
+    .attack-info-row {
+        background: rgba(15, 23, 42, 0.65);
+        padding: 0.9rem 1rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+        border-left: 4px solid rgba(248, 113, 113, 0.6);
+    }
+
+    .attack-label {
+        color: #fda4af;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .attack-value {
+        color: #f8fafc;
+        font-size: 1rem;
+        font-weight: 500;
+        margin-top: 0.3rem;
+    }
+
+    .traffic-feed {
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .traffic-row {
+        display: grid;
+        grid-template-columns: 110px 1fr 1fr 90px 110px 110px;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+
+    .traffic-row + .traffic-row {
+        border-top: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .traffic-row.header {
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.2em;
+        color: #94a3b8;
+        background: rgba(15, 23, 42, 0.95);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .traffic-row.attack {
+        background: rgba(248, 113, 113, 0.08);
+        border-left: 4px solid rgba(248, 113, 113, 0.8);
+    }
+
+    .traffic-row.normal {
+        background: rgba(34, 197, 94, 0.05);
+        border-left: 4px solid rgba(34, 197, 94, 0.7);
+    }
+
+    .traffic-cell {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .traffic-status {
+        font-weight: 700;
+        letter-spacing: 0.05em;
+    }
+
+    .traffic-status.attack { color: #f87171; }
+    .traffic-status.normal { color: #34d399; }
+
+    .alert-feed {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .alert-card {
+        padding: 0.9rem 1.1rem;
+        border-radius: 10px;
+        background: rgba(15, 23, 42, 0.9);
+        border-left: 4px solid #38bdf8;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        color: #e2e8f0;
+    }
+
+    .alert-card.critical { border-color: #ef4444; }
+    .alert-card.high { border-color: #f97316; }
+    .alert-card.medium { border-color: #fbbf24; }
+    .alert-card.low { border-color: #22c55e; }
+
+    .alert-card-title {
+        font-weight: 700;
+        margin-bottom: 0.2rem;
+    }
+
+    .alert-card-meta {
+        font-size: 0.75rem;
+        color: #cbd5f5;
+    }
+
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+
+    ::-webkit-scrollbar {
+        width: 10px;
+        background: rgba(30, 41, 59, 0.6);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(120deg, #2563eb 0%, #1d4ed8 100%);
+        border-radius: 5px;
+    }
+</style>
+
+""", unsafe_allow_html=True)
+
+# Initialize services
 if 'ids_service' not in st.session_state:
     st.session_state.ids_service = None
     st.session_state.multi_model = MultiModelService()
@@ -178,14 +275,9 @@ if 'ids_service' not in st.session_state:
     st.session_state.attack_timeline = deque(maxlen=50)
     st.session_state.protocol_stats = {}
     st.session_state.port_stats = {}
-    st.session_state.latest_attack = None
-    st.session_state.selected_model = 'gradient_boosting'
-    st.session_state.custom_dataset = None
-    st.session_state.custom_dataset_name = None
-    st.session_state.last_processed = None
+    st.session_state.latest_attack = None  # ADDED: Track latest attack
 
-# ---------------------------------------------------------------------------
-# Data helpers
+# Load test data for metrics
 @st.cache_data
 def load_test_data():
     X = pd.read_csv(DATA_PROCESSED / "X_test.csv")
@@ -193,80 +285,8 @@ def load_test_data():
     return X, y
 
 
-def get_dataset_for_evaluation():
-    custom_df = st.session_state.get('custom_dataset')
-    if custom_df is not None:
-        if 'label' not in custom_df.columns:
-            name = st.session_state.get('custom_dataset_name', 'Uploaded dataset')
-            return None, None, False, name, "Uploaded dataset is unlabeled (missing 'label' column)."
-        features = custom_df.drop(columns=['label', 'attack_cat'], errors='ignore')
-        labels = custom_df['label'].values
-        return features, labels, False, st.session_state.get('custom_dataset_name', 'Uploaded dataset'), None
-
-    X_test, y_test = load_test_data()
-    return X_test, y_test, True, "UNSW-NB15 processed test split", None
-
-
-def evaluate_models_on_dataset(features, labels, sample_size, is_preprocessed):
-    if labels is None or len(labels) == 0:
-        return [], 0
-
-    indices = np.arange(len(labels))
-    if len(indices) > sample_size:
-        rng = np.random.default_rng(42)
-        indices = np.sort(rng.choice(indices, size=sample_size, replace=False))
-
-    metrics = {}
-    for model_name in st.session_state.multi_model.get_available_models():
-        metrics[model_name] = {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0, 'prob_sum': 0.0, 'count': 0}
-
-    for idx in indices:
-        row = features.iloc[idx:idx+1] if isinstance(features, pd.DataFrame) else pd.DataFrame(features[idx:idx+1])
-        predictions = st.session_state.multi_model.predict_all(row, is_preprocessed=is_preprocessed)
-        label = int(labels[idx])
-
-        for model_name, result in predictions.items():
-            if result['prediction'] == 'error':
-                continue
-            pred = 1 if result['prediction'] == 'attack' else 0
-            stats = metrics[model_name]
-            stats['count'] += 1
-            stats['prob_sum'] += result['probability']
-            if label == 1 and pred == 1:
-                stats['tp'] += 1
-            elif label == 0 and pred == 0:
-                stats['tn'] += 1
-            elif label == 0 and pred == 1:
-                stats['fp'] += 1
-            else:
-                stats['fn'] += 1
-
-    summary = []
-    for model_name, stats in metrics.items():
-        total = stats['tp'] + stats['tn'] + stats['fp'] + stats['fn']
-        if total == 0:
-            continue
-        accuracy = (stats['tp'] + stats['tn']) / total
-        precision = stats['tp'] / (stats['tp'] + stats['fp']) if (stats['tp'] + stats['fp']) > 0 else 0
-        recall = stats['tp'] / (stats['tp'] + stats['fn']) if (stats['tp'] + stats['fn']) > 0 else 0
-        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
-        avg_prob = stats['prob_sum'] / stats['count'] if stats['count'] else 0
-        summary.append({
-            'Model': model_name.replace('_', ' ').title(),
-            'Accuracy': accuracy,
-            'Precision': precision,
-            'Recall': recall,
-            'F1 Score': f1,
-            'Avg Attack Probability': avg_prob,
-            'Sampled Rows': stats['count']
-        })
-
-    return summary, len(indices)
-
-# ---------------------------------------------------------------------------
-# UI helper utilities
-
 def _format_timestamp(value, fmt="%H:%M:%S"):
+    """Safely format timestamps coming from replayed packets/alerts."""
     if isinstance(value, datetime):
         return value.strftime(fmt)
     if value is None:
@@ -278,121 +298,126 @@ def _format_timestamp(value, fmt="%H:%M:%S"):
 
 
 def render_html_block(html: str):
+    """Helper to render multi-line HTML without Markdown indent issues."""
     cleaned = dedent(html).strip()
     if cleaned:
         st.markdown(cleaned, unsafe_allow_html=True)
 
 
 def build_packet_row(packet: dict) -> str:
+    """Return HTML for a single traffic row."""
     is_attack = packet.get('prediction') == 'attack'
     status_class = "attack" if is_attack else "normal"
     attack_label = packet.get('attack_type')
     status_label = (attack_label or "ATTACK").upper() if is_attack else "NORMAL"
 
-    duration_value = packet.get('dur')
-    try:
-        duration_text = f"{float(duration_value):.3f}s"
-    except (TypeError, ValueError):
-        duration_text = "N/A"
-
     probability = packet.get('probability')
     probability_text = f"{probability:.1%}" if isinstance(probability, (int, float)) else "N/A"
 
-    row = [
-        f'<div class="traffic-row {status_class}">',
-        f'<div class="traffic-cell">{_format_timestamp(packet.get("timestamp"))}</div>',
-        f'<div class="traffic-cell">{packet.get("service", "-")}</div>',
-        f'<div class="traffic-cell">{duration_text}</div>',
-        f'<div class="traffic-cell traffic-status {status_class}">{status_label}</div>',
-        f'<div class="traffic-cell">{probability_text}</div>',
-        '</div>'
-    ]
-    return "\n".join(row)
+    return dedent(f"""
+    <div class="traffic-row {status_class}">
+        <div class="traffic-cell">{_format_timestamp(packet.get('timestamp'))}</div>
+        <div class="traffic-cell">{packet.get('srcip', 'N/A')}</div>
+        <div class="traffic-cell">{packet.get('dstip', 'N/A')}</div>
+        <div class="traffic-cell">{packet.get('service', '-')}</div>
+        <div class="traffic-cell traffic-status {status_class}">{status_label}</div>
+        <div class="traffic-cell">{probability_text}</div>
+    </div>
+    """)
 
 
 def build_alert_card(alert: dict) -> str:
+    """Return HTML for a single alert card."""
     severity = alert.get('severity', 'low')
     probability = alert.get('probability')
     probability_text = f"{probability:.1%}" if isinstance(probability, (int, float)) else "N/A"
+
     return dedent(f"""
     <div class="alert-card {severity}">
         <div class="alert-card-title">[{severity.upper()}] {alert.get('attack_type', 'Unknown')}</div>
         <div>{alert.get('message', 'Alert generated')}</div>
-        <div class="alert-card-meta">Confidence: {probability_text} | {_format_timestamp(alert.get('timestamp'))}</div>
+        <div class="alert-card-meta">
+            Confidence: {probability_text} | {_format_timestamp(alert.get('timestamp'))}
+        </div>
     </div>
     """)
 
-# Attack explanations
-ATTACK_EXPLANATIONS = {
-    'Backdoor': {
-        'what': 'Backdoor attack – unauthorized remote access attempt',
-        'why_dangerous': 'Attacker tries to keep persistent access',
-        'indicators': 'Unusual port usage, remote shells',
-        'action': 'Block IP, hunt for persistence, forensic scan'
-    },
-    'Exploits': {
-        'what': 'Exploit attempt – abusing software vulnerability',
-        'why_dangerous': 'Can escalate privileges or drop payloads',
-        'indicators': 'Malformed packets, buffer overflow patterns',
-        'action': 'Patch target, isolate asset, review logs'
-    },
-    'DoS': {
-        'what': 'Denial of Service / Flood traffic',
-        'why_dangerous': 'Impacts availability, saturates resources',
-        'indicators': 'Spike in packets, repeated connection attempts',
-        'action': 'Enable rate limiting, block offending IPs'
-    },
-    'Reconnaissance': {
-        'what': 'Recon / scanning',
-        'why_dangerous': 'Mapping network before attack',
-        'indicators': 'Port sweeps, service enumeration',
-        'action': 'Monitor closely, consider blocking source'
-    },
-    'Shellcode': {
-        'what': 'Shellcode injection attempt',
-        'why_dangerous': 'Could lead to full compromise',
-        'indicators': 'Executable payloads in data field',
-        'action': 'Isolate host, run malware analysis'
-    },
-    'Worms': {
-        'what': 'Self-propagating malware',
-        'why_dangerous': 'Spreads laterally at speed',
-        'indicators': 'Outbound scanning to many hosts',
-        'action': 'Quarantine, block egress until cleaned'
-    },
-    'Fuzzers': {
-        'what': 'Fuzzing / malformed traffic tests',
-        'why_dangerous': 'Looking for crashes to exploit later',
-        'indicators': 'Random payloads, boundary tests',
-        'action': 'Activate rate limits, log payloads, patch targets'
-    },
-    'Analysis': {
-        'what': 'Traffic analysis / sniffing',
-        'why_dangerous': 'Metadata leakage, recon',
-        'indicators': 'Passive taps, unusual sniffing tools',
-        'action': 'Enforce encryption, monitor NICs'
-    },
-    'Generic': {
-        'what': 'Generic malicious signal',
-        'why_dangerous': 'Unclassified threat pattern',
-        'indicators': 'Abnormal protocol mix, heuristics triggered',
-        'action': 'Investigate session, capture PCAP'
+
+# ADDED FROM PRO_FIXED: Attack explanation system
+def get_attack_explanation(attack_type: str) -> dict:
+    """Get detailed explanation for attack type"""
+    explanations = {
+        'Backdoor': {
+            'what': 'Backdoor Attack - Unauthorized remote access attempt',
+            'why_dangerous': 'Attacker trying to install persistent remote access mechanism',
+            'indicators': 'Unusual port usage, suspicious connection patterns, command execution attempts',
+            'action': 'IMMEDIATE: Block source IP, scan for malware, check system for backdoors'
+        },
+        'Exploits': {
+            'what': 'Exploitation Attack - Attempting to exploit system vulnerabilities',
+            'why_dangerous': 'Trying to gain unauthorized access by exploiting software flaws',
+            'indicators': 'Buffer overflow attempts, malformed packets, privilege escalation patterns',
+            'action': 'Block traffic, patch vulnerable systems, review security logs'
+        },
+        'DoS': {
+            'what': 'Denial of Service - Attempt to overwhelm system resources',
+            'why_dangerous': 'Can make services unavailable, cause system crashes',
+            'indicators': 'High packet rate, repeated connection attempts, resource exhaustion',
+            'action': 'Enable rate limiting, block attacking IPs, activate DDoS protection'
+        },
+        'Reconnaissance': {
+            'what': 'Reconnaissance/Scanning - Attacker gathering system information',
+            'why_dangerous': 'Preparation phase for future attacks, mapping network vulnerabilities',
+            'indicators': 'Port scanning, service enumeration, network mapping attempts',
+            'action': 'Monitor closely, log all attempts, consider blocking probing IPs'
+        },
+        'Shellcode': {
+            'what': 'Shellcode Injection - Malicious code execution attempt',
+            'why_dangerous': 'Can lead to complete system compromise, data theft',
+            'indicators': 'Unusual byte patterns, executable code in data streams',
+            'action': 'CRITICAL: Isolate system, scan for malware, investigate payload'
+        },
+        'Worms': {
+            'what': 'Worm Propagation - Self-replicating malware spreading',
+            'why_dangerous': 'Can rapidly spread across network, infect multiple systems',
+            'indicators': 'Repeated connection attempts to multiple hosts, file replication',
+            'action': 'URGENT: Quarantine affected systems, block propagation, run antivirus'
+        },
+        'Fuzzers': {
+            'what': 'Fuzzing Attack - Testing system with malformed inputs',
+            'why_dangerous': 'Looking for vulnerabilities to exploit later',
+            'indicators': 'Random/malformed data, boundary testing, crash attempts',
+            'action': 'Log patterns, validate inputs, update security rules'
+        },
+        'Analysis': {
+            'what': 'Traffic Analysis - Monitoring network for information',
+            'why_dangerous': 'Can reveal sensitive information, communication patterns',
+            'indicators': 'Passive monitoring, traffic sniffing, pattern analysis',
+            'action': 'Enable encryption, monitor suspicious activity'
+        },
+        'Generic': {
+            'what': 'Generic Malicious Activity - Suspicious behavior detected',
+            'why_dangerous': 'Unknown threat pattern, potential new attack vector',
+            'indicators': 'Anomalous traffic patterns, unusual protocols',
+            'action': 'Investigate thoroughly, collect samples for analysis'
+        }
     }
-}
+    return explanations.get(attack_type, {
+        'what': f'{attack_type} Attack',
+        'why_dangerous': 'Malicious activity detected',
+        'indicators': 'Suspicious network behavior',
+        'action': 'Monitor and investigate'
+    })
 
 
 def render_attack_detail(attack_packet: dict):
+    """Render detailed attack information - ADDED FROM PRO_FIXED"""
     attack_type = attack_packet.get('attack_type', 'Unknown')
-    explanation = ATTACK_EXPLANATIONS.get(attack_type, ATTACK_EXPLANATIONS['Generic'])
-    detection_time = _format_timestamp(attack_packet.get('timestamp'), "%Y-%m-%d %H:%M:%S.%f")
-    if detection_time.endswith('N/A'):
-        detection_time = _format_timestamp(attack_packet.get('timestamp'))
-
-    duration_value = attack_packet.get('dur')
-    try:
-        duration_text = f"{float(duration_value):.3f}s"
-    except (TypeError, ValueError):
-        duration_text = "N/A"
+    explanation = get_attack_explanation(attack_type)
+    detection_time = attack_packet.get('timestamp')
+    detection_str = _format_timestamp(detection_time, "%Y-%m-%d %H:%M:%S.%f")
+    if "." in detection_str and detection_str != "N/A":
+        detection_str = detection_str[:-3]
 
     src_ip = attack_packet.get('srcip', 'N/A')
     dst_ip = attack_packet.get('dstip', 'N/A')
@@ -403,90 +428,58 @@ def render_attack_detail(attack_packet: dict):
     html_lines = [
         '<div class="attack-detail">',
         f'<div class="attack-header">ATTACK DETECTED: {attack_type.upper()}</div>',
-        '<div class="attack-info-row"><div class="attack-label">WHEN</div>'
-        f'<div class="attack-value">{detection_time}</div></div>',
-        '<div class="attack-info-row"><div class="attack-label">WHAT</div>'
-        f'<div class="attack-value">{explanation["what"]}</div></div>',
-        '<div class="attack-info-row"><div class="attack-label">WHY DANGEROUS</div>'
-        f'<div class="attack-value">{explanation["why_dangerous"]}</div></div>',
-        '<div class="attack-info-row"><div class="attack-label">INDICATORS</div>'
-        f'<div class="attack-value">{explanation["indicators"]}</div></div>',
-        '<div class="attack-info-row"><div class="attack-label">SOURCE & TARGET</div>'
-        f'<div class="attack-value">From: <span style="color:#ef4444;">{src_ip}</span> -&gt; '
-        f'To: <span style="color:#fbbf24;">{dst_ip}</span> | '
-        f'Service: <span style="color:#38bdf8;">{service}</span> | '
-        f'Duration: <span style="color:#93c5fd;">{duration_text}</span></div></div>',
-        '<div class="attack-info-row"><div class="attack-label">MODEL CONFIDENCE</div>'
-        f'<div class="attack-value">{probability_text}</div></div>',
-        '<div class="attack-info-row"><div class="attack-label">RECOMMENDED ACTION</div>'
-        f'<div class="attack-value" style="color:#fca5a5; font-weight:800;">{explanation["action"]}</div></div>',
-        '</div>'
+        '<div class="attack-info-row">',
+        '<div class="attack-label">WHEN (Detection Time)</div>',
+        f'<div class="attack-value">{detection_str}</div>',
+        '</div>',
+        '<div class="attack-info-row">',
+        '<div class="attack-label">WHAT (Attack Type)</div>',
+        f'<div class="attack-value">{explanation["what"]}</div>',
+        '</div>',
+        '<div class="attack-info-row">',
+        '<div class="attack-label">WHY DANGEROUS</div>',
+        f'<div class="attack-value">{explanation["why_dangerous"]}</div>',
+        '</div>',
+        '<div class="attack-info-row">',
+        '<div class="attack-label">HOW DETECTED (Indicators)</div>',
+        f'<div class="attack-value">{explanation["indicators"]}</div>',
+        '</div>',
+        '<div class="attack-info-row">',
+        '<div class="attack-label">SOURCE & TARGET</div>',
+        '<div class="attack-value">',
+        f'From: <span style="color: #ef4444;">{src_ip}</span> -&gt;',
+        f'To: <span style="color: #fbbf24;">{dst_ip}</span> |',
+        f'Service: <span style="color: #00d4ff;">{service}</span>',
+        '</div>',
+        '</div>',
+        '<div class="attack-info-row">',
+        '<div class="attack-label">MODEL CONFIDENCE</div>',
+        f'<div class="attack-value">{probability_text} - Model assessment confidence</div>',
+        '</div>',
+        '<div class="attack-info-row">',
+        '<div class="attack-label">RECOMMENDED ACTION</div>',
+        f'<div class="attack-value" style="color: #fca5a5; font-weight: 800;">{explanation["action"]}</div>',
+        '</div>',
+        '</div>',
     ]
+
     render_html_block("\n".join(html_lines))
 
 
-def render_current_packet_detail():
-    packet = st.session_state.get('last_processed')
-    if not packet:
-        return
-
-    raw_packet = packet.get('raw_packet') or {}
-    row_idx = raw_packet.get('replay_index', 'N/A')
-    dataset_label = st.session_state.get('custom_dataset_name', 'Default UNSW-NB15 testing set')
-
-    prediction = packet.get('prediction', 'unknown').upper()
-    probability = packet.get('probability', 0)
-    label = packet.get('true_label')
-    if label == 1:
-        actual_text = 'ATTACK (labelled)'
-    elif label == 0:
-        actual_text = 'NORMAL (labelled)'
-    else:
-        actual_text = 'Unknown / unlabeled'
-
-    summary_keys = ['srcip', 'dstip', 'service', 'proto', 'state', 'dur', 'spkts', 'dpkts', 'sbytes', 'dbytes']
-    summary = []
-    for key in summary_keys:
-        value = raw_packet.get(key)
-        if value is not None:
-            summary.append(f"{key}: {value}")
-    summary_text = ", ".join(summary[:6]) if summary else "No raw columns available"
-
-    preview_lines = []
-    for key, value in raw_packet.items():
-        preview_lines.append(f"{key}: {value}")
-        if len(preview_lines) >= 12:
-            break
-
-    st.markdown(f"""
-    <div class="packet-detail">
-        <h4>Row #{row_idx} from {dataset_label}</h4>
-        <div class="packet-row"><strong>Row data:</strong> {summary_text}</div>
-        <div class="packet-row"><strong>Prediction:</strong> {prediction} ({probability:.1%})</div>
-        <div class="packet-row"><strong>Actual label:</strong> {actual_text}</div>
-        <div class="packet-row"><strong>Timestamp:</strong> {_format_timestamp(packet.get('timestamp'))}</div>
-    </div>
-    """, unsafe_allow_html=True)
-    if preview_lines:
-        st.code("\n".join(preview_lines), language="text")
-
-
-# ---------------------------------------------------------------------------
-# Header & controls
-
 def render_header():
+    """Main header"""
     st.markdown('<div class="mega-header">Network Intrusion Detection System</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">Real-Time Threat Detection & Analysis - UNSW-NB15 Dataset</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-title">Real-Time Threat Detection & Analysis • UNSW-NB15 Dataset</div>', unsafe_allow_html=True)
 
 
 def render_control_panel():
+    """Control buttons"""
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         if st.button("Start System", use_container_width=True, disabled=st.session_state.is_running):
-            model_to_use = st.session_state.get('selected_model', 'gradient_boosting')
-            data_frame = st.session_state.get('custom_dataset')
-            st.session_state.ids_service = RealtimeIDSService(model_name=model_to_use, data_frame=data_frame)
+            if st.session_state.ids_service is None:
+                st.session_state.ids_service = RealtimeIDSService()
             st.session_state.ids_service.start()
             st.session_state.is_running = True
             st.rerun()
@@ -500,9 +493,12 @@ def render_control_panel():
 
     with col3:
         if st.button("Reset All", use_container_width=True):
+            # Stop system if running
             if st.session_state.ids_service:
                 st.session_state.ids_service.stop()
                 st.session_state.ids_service.reset()
+
+            # Clear all session state
             st.session_state.is_running = False
             st.session_state.packet_history.clear()
             st.session_state.alert_history.clear()
@@ -510,128 +506,72 @@ def render_control_panel():
             st.session_state.latest_attack = None
             st.session_state.protocol_stats.clear()
             st.session_state.port_stats.clear()
-            st.session_state.last_processed = None
+
+            # Reinitialize services to pick up updated model list
+            st.session_state.ids_service = None
+            st.session_state.multi_model = MultiModelService()
+
+            # Clear anomaly and comparison results
             if hasattr(st.session_state, 'anomaly_results'):
                 delattr(st.session_state, 'anomaly_results')
             if hasattr(st.session_state, 'current_predictions'):
                 delattr(st.session_state, 'current_predictions')
             if hasattr(st.session_state, 'current_agreement'):
                 delattr(st.session_state, 'current_agreement')
-            if hasattr(st.session_state, 'model_eval_results'):
-                delattr(st.session_state, 'model_eval_results')
-            st.session_state.ids_service = None
-            st.session_state.multi_model = MultiModelService()
+
             st.rerun()
 
     with col4:
         status = "ACTIVE" if st.session_state.is_running else "INACTIVE"
-        icon = "●" if st.session_state.is_running else "○"
-        color = '#10b981' if st.session_state.is_running else '#ef4444'
-        st.markdown(f"<div style='text-align:center;padding:0.5rem;font-size:1.3rem;font-weight:700;color:{color};'>{icon} {status}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align: center; padding: 0.5rem; font-size: 1.3rem; font-weight: 700; color: {'#10b981' if st.session_state.is_running else '#ef4444'};'>{status}</div>", unsafe_allow_html=True)
 
-    info_model = st.session_state.get('selected_model', 'gradient_boosting').replace('_', ' ').title()
-    info_dataset = st.session_state.get('custom_dataset_name', 'Default UNSW-NB15 testing set')
-    if st.session_state.is_running and st.session_state.ids_service:
-        info_model = st.session_state.ids_service.model_name.replace('_', ' ').title()
-        info_dataset = st.session_state.get('custom_dataset_name', 'Default UNSW-NB15 testing set') \
-            if st.session_state.get('custom_dataset') is not None else "Default UNSW-NB15 testing set"
-        card_title = "Currently analyzing"
-    else:
-        card_title = "Next run will use"
-
-    st.markdown(f"""
-        <div class="model-info-card" style="margin-top:0.5rem">
-            <div class="model-info-title">{card_title}</div>
-            <div class="model-info-body">
-                <strong>Model:</strong> {info_model}<br>
-                <strong>Data source:</strong> {info_dataset}
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-# ---------------------------------------------------------------------------
-# Tabs
-# ---------------------------------------------------------------------------
-# Tabs implementation
 
 def tab_realtime_monitoring():
+    """Tab 1: Real-Time Monitoring - ENHANCED WITH ATTACK DETAILS"""
     st.markdown('<div class="section-title">Real-Time Network Monitoring</div>', unsafe_allow_html=True)
 
     if not st.session_state.ids_service or not st.session_state.is_running:
         st.info("Click Start System to begin real-time monitoring.")
+
+        # Model selection even when not running
         st.markdown("---")
-        st.markdown('<div class="section-title" style="margin-top:0;">System Configuration</div>', unsafe_allow_html=True)
+        st.markdown("### System Configuration")
 
-        available_models = st.session_state.multi_model.get_available_models()
-        current_selection = st.session_state.get('selected_model', 'gradient_boosting')
-        current_index = available_models.index(current_selection) if current_selection in available_models else 0
-
-        col1, col2 = st.columns([1.2, 1])
+        col1, col2 = st.columns(2)
         with col1:
+            available_models = st.session_state.multi_model.get_available_models()
             selected_model = st.selectbox(
                 "Select Detection Model",
                 options=available_models,
                 format_func=lambda x: x.replace('_', ' ').title(),
-                index=current_index,
+                index=0 if 'gradient_boosting' in available_models else 0,
                 key='model_selector'
             )
+
             if st.button("Apply Model", use_container_width=True):
-                st.session_state.selected_model = selected_model
-                st.session_state.ids_service = None
-                st.success(f"Model selection updated to {selected_model.replace('_', ' ').title()}. Start the system to apply it.")
+                # Re-initialize service with selected model
+                st.session_state.ids_service = RealtimeIDSService(model_name=selected_model)
+                st.success(f"Model changed to: {selected_model.replace('_', ' ').title()}")
 
         with col2:
-            dataset_label = st.session_state.get('custom_dataset_name', "Default UNSW-NB15 testing set")
-            model_list = "<br>".join([f"- {m.replace('_', ' ').title()}" for m in available_models])
-            st.markdown(
-                f"""
-                <div class="model-info-card">
-                    <div class="model-info-title">Pending Model: {selected_model.replace('_', ' ').title()}</div>
-                    <div class="model-info-body">
-                        <strong>Data Source:</strong> {dataset_label}<br><br>
-                        <strong>Available Models ({len(available_models)}):</strong><br>
-                        {model_list}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            # Dynamic model list based on what's actually loaded
+            model_list = "\n            ".join([f"- {m.replace('_', ' ').title()}" for m in available_models])
+            st.info(f"""
+            **Current Model:** {selected_model.replace('_', ' ').title()}
 
-        uploaded_file = st.file_uploader("Upload CSV or Parquet for live replay", type=["csv", "parquet"])
-        if uploaded_file is not None:
-            try:
-                if uploaded_file.name.lower().endswith('.parquet'):
-                    custom_df = pd.read_parquet(uploaded_file)
-                else:
-                    custom_df = pd.read_csv(uploaded_file)
-                st.session_state.custom_dataset = custom_df
-                st.session_state.custom_dataset_name = uploaded_file.name
-                st.session_state.ids_service = None
-                st.success(f"Loaded {len(custom_df):,} records from {uploaded_file.name}. Start the system to replay this dataset.")
-            except Exception as exc:
-                st.error(f"Failed to load file: {exc}")
+            **Available Models ({len(available_models)}):**
+            {model_list}
+            """)
 
-        if st.session_state.custom_dataset is not None:
-            if st.button("Remove Uploaded Dataset", use_container_width=True):
-                st.session_state.custom_dataset = None
-                st.session_state.custom_dataset_name = None
-                st.success("Custom dataset removed. Default UNSW dataset will be used.")
-
-        active_dataset_label = st.session_state.get('custom_dataset_name', 'Default UNSW-NB15 testing set')
-        st.markdown(
-            f"<div style='margin-top:0.5rem;font-size:0.9rem;color:#94a3b8;'>"
-            f"<strong>When you press Start System</strong> the dashboard will stream data from {active_dataset_label} using the selected model above."
-            f"</div>",
-            unsafe_allow_html=True
-        )
         return
 
-    # When running ---------------------------------------------------------
+    # Model selection when running
     with st.expander("Model Selection", expanded=False):
         col1, col2 = st.columns([2, 1])
         with col1:
             available_models = st.session_state.multi_model.get_available_models()
             current_model = st.session_state.ids_service.model_name if hasattr(st.session_state.ids_service, 'model_name') else 'gradient_boosting'
+
             selected_model = st.selectbox(
                 "Active Detection Model",
                 options=available_models,
@@ -639,20 +579,20 @@ def tab_realtime_monitoring():
                 index=available_models.index(current_model) if current_model in available_models else 0,
                 key='model_selector_running'
             )
+
             if st.button("Change Model (Will Restart)", use_container_width=True):
                 st.session_state.ids_service.stop()
-                st.session_state.ids_service = RealtimeIDSService(
-                    model_name=selected_model,
-                    data_frame=st.session_state.get('custom_dataset')
-                )
+                st.session_state.ids_service = RealtimeIDSService(model_name=selected_model)
                 st.session_state.ids_service.start()
-                st.session_state.selected_model = selected_model
                 st.success(f"Switched to: {selected_model.replace('_', ' ').title()}")
                 st.rerun()
+
         with col2:
             st.info(f"**Current:** {current_model.replace('_', ' ').title()}")
 
+    # KPIs
     stats = st.session_state.ids_service.get_statistics()
+
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.metric("Packets", f"{stats['packets_processed']:,}", f"+{len(st.session_state.packet_history)}")
@@ -661,34 +601,43 @@ def tab_realtime_monitoring():
     with col3:
         st.metric("Benign", f"{stats['normal_traffic']:,}", "Verified")
     with col4:
-        st.metric("Accuracy", f"{stats.get('accuracy', 0):.1f}%", f"{stats['true_positives']} TP")
+        accuracy = stats.get('accuracy', 0)
+        st.metric("Accuracy", f"{accuracy:.1f}%", f"{stats['true_positives']} TP")
     with col5:
-        attack_rate = (stats['attacks_detected'] / stats['packets_processed'] * 100) if stats['packets_processed'] else 0
+        attack_rate = (stats['attacks_detected'] / stats['packets_processed'] * 100) if stats['packets_processed'] > 0 else 0
         st.metric("Threat Rate", f"{attack_rate:.1f}%", "Live")
 
-    render_current_packet_detail()
     st.markdown("---")
 
-    for _ in range(2):
+    # Process packets
+    for _ in range(10):
         packet = st.session_state.ids_service.process_next_packet()
-        if not packet:
-            continue
-        st.session_state.packet_history.append(packet)
-        st.session_state.last_processed = packet
-        if packet['prediction'] == 'attack' and packet.get('attack_type') and packet['attack_type'] != 'Normal':
-            st.session_state.latest_attack = packet
-        proto = packet.get('proto', 'Unknown')
-        st.session_state.protocol_stats[proto] = st.session_state.protocol_stats.get(proto, 0) + 1
-        service = packet.get('service', 'Unknown')
-        st.session_state.port_stats[service] = st.session_state.port_stats.get(service, 0) + 1
+        if packet:
+            st.session_state.packet_history.append(packet)
 
+            # ADDED: Track latest attack for detailed display
+            if packet['prediction'] == 'attack' and packet.get('attack_type') and packet['attack_type'] != 'Normal':
+                st.session_state.latest_attack = packet
+
+            # Protocol stats
+            proto = packet.get('proto', 'Unknown')
+            st.session_state.protocol_stats[proto] = st.session_state.protocol_stats.get(proto, 0) + 1
+
+            # Port stats
+            service = packet.get('service', 'Unknown')
+            st.session_state.port_stats[service] = st.session_state.port_stats.get(service, 0) + 1
+
+    # ADDED: Latest Attack Detail Panel
     if st.session_state.latest_attack:
-        st.markdown("### Latest Attack Detected - Full Analysis")
+        st.markdown("### LATEST ATTACK DETECTED - FULL ANALYSIS")
         render_attack_detail(st.session_state.latest_attack)
         st.markdown("---")
 
+    # Charts
     col1, col2 = st.columns(2)
+
     with col1:
+        # Traffic feed
         st.markdown("### Live Traffic Stream")
         recent = list(st.session_state.packet_history)[-15:]
         if recent:
@@ -697,8 +646,9 @@ def tab_realtime_monitoring():
             <div class="traffic-feed">
                 <div class="traffic-row header">
                     <div class="traffic-cell">Time</div>
+                    <div class="traffic-cell">Source IP</div>
+                    <div class="traffic-cell">Destination IP</div>
                     <div class="traffic-cell">Service</div>
-                    <div class="traffic-cell">Duration</div>
                     <div class="traffic-cell">Status</div>
                     <div class="traffic-cell">Confidence</div>
                 </div>
@@ -709,18 +659,26 @@ def tab_realtime_monitoring():
             st.info("Waiting for packets...")
 
     with col2:
+        # Alert feed
         st.markdown("### Security Alerts")
         alerts = st.session_state.ids_service.get_recent_alerts(10)
         if alerts:
             cards_html = "".join(build_alert_card(alert) for alert in reversed(alerts))
-            render_html_block(f"<div class=\"alert-feed\">{cards_html}</div>")
+            render_html_block(f"""
+            <div class="alert-feed">
+                {cards_html}
+            </div>
+            """)
         else:
             st.success("No threats detected")
 
+
 def tab_model_comparison():
+    """Tab 2: Multi-Model Comparison"""
     num_models = len(st.session_state.multi_model.get_available_models())
     st.markdown(f'<div class="section-title">Multi-Model Comparison ({num_models} Models)</div>', unsafe_allow_html=True)
 
+    # Model descriptions
     model_descriptions = {
         'Gradient Boosting': 'Tree-based ensemble model that builds models sequentially to correct errors',
         'Random Forest': 'Forest of decision trees trained on random data subsets for robust predictions',
@@ -728,24 +686,32 @@ def tab_model_comparison():
         'Supervised Sgd': 'Fast linear model using stochastic gradient descent',
         'Isolation Forest': 'Unsupervised anomaly detector that isolates outliers quickly'
     }
+
     model_names = [m.replace('_', ' ').title() for m in st.session_state.multi_model.get_available_models()]
 
     with st.expander("How to read this comparison", expanded=False):
         st.markdown("""
         **Understanding the metrics**
-        - **Prediction**: ATTACK or NORMAL decision per model
-        - **Attack Probability**: Likelihood this is an attack (0% = normal, 100% = attack)
-        - **Confidence**: HIGH when probability is <30% or >70%
+        - **Prediction**: Model's final decision (ATTACK or NORMAL)
+        - **Attack Probability**: Likelihood this is an attack (0% = definitely normal, 100% = definitely attack)
+        - **Confidence**: How sure the model is
+            - **HIGH**: Probability < 30% or > 70% (clear decision)
+            - **MEDIUM**: Probability between 30-70% (uncertain)
+            - **LOW**: Probability near 50% (can't decide)
 
         **Model consensus**
-        - Agreement % shows how aligned the models are
+        - If most models agree -> High confidence in final decision
+        - If models disagree -> Sample is difficult to classify
 
         **Chart colors**
-        - Green = normal, Yellow = uncertain, Red = attack
+        - Green (low %): Model thinks it's NORMAL traffic
+        - Yellow (medium %): Model is UNCERTAIN
+        - Red (high %): Model thinks it's an ATTACK
         """)
 
     st.info(f"{num_models} ML models active: {', '.join(model_names)}")
 
+    # Test sample selection
     col1, col2 = st.columns([3, 1])
     with col1:
         sample_idx = st.number_input("Select Test Sample Index (0-10,000)", min_value=0, max_value=10000, value=100, step=1)
@@ -754,31 +720,58 @@ def tab_model_comparison():
             X_test, y_test = load_test_data()
             sample = X_test.iloc[sample_idx:sample_idx+1]
             true_label = y_test[sample_idx]
+
+            # X_test is already preprocessed, so pass is_preprocessed=True
             predictions = st.session_state.multi_model.predict_all(sample, is_preprocessed=True)
             agreement = st.session_state.multi_model.get_model_agreement(predictions)
+
             st.session_state.current_predictions = predictions
             st.session_state.current_agreement = agreement
             st.session_state.current_true_label = true_label
 
     if hasattr(st.session_state, 'current_predictions'):
         st.markdown("---")
+
+        # Summary metrics with explanations
         col1, col2, col3 = st.columns(3)
+
         with col1:
             true_is_attack = st.session_state.current_true_label == 1
-            st.metric("True Label", "ATTACK" if true_is_attack else "NORMAL", "Ground truth")
-        with col2:
-            agreement = st.session_state.current_agreement
-            st.metric("Consensus", agreement['consensus'].upper(), f"{agreement['agreement_percentage']:.0f}% agree")
-        with col3:
-            st.metric("Model Votes", f"Attack: {agreement['attack_votes']} | Normal: {agreement['normal_votes']}", f"{num_models} total")
+            st.metric("True Label",
+                     "ATTACK" if true_is_attack else "NORMAL",
+                     "Ground truth from dataset")
 
+        with col2:
+            consensus = st.session_state.current_agreement['consensus'].upper()
+            agreement_pct = st.session_state.current_agreement['agreement_percentage']
+            st.metric("Consensus",
+                     consensus,
+                     f"{agreement_pct:.0f}% of models agree")
+
+        with col3:
+            attack_votes = st.session_state.current_agreement['attack_votes']
+            normal_votes = st.session_state.current_agreement['normal_votes']
+            st.metric("Model Votes",
+                     f"Attack: {attack_votes} | Normal: {normal_votes}",
+                     f"{num_models} total models")
+
+        st.markdown("---")
+
+        # Model predictions table with descriptions
         st.markdown("### Detailed Model Predictions")
-        comparison_data = []
+
+        comparison_df = []
         for model_name, result in st.session_state.current_predictions.items():
             display_name = model_name.replace('_', ' ').title()
             prob_pct = result['probability'] * 100
-            interpretation = f"Attack ({prob_pct:.1f}% confidence)" if result['prediction'] == 'attack' else f"Normal ({100-prob_pct:.1f}% confidence)"
-            comparison_data.append({
+
+            # Add interpretation
+            if result['prediction'] == 'normal':
+                interpretation = f"Normal ({100-prob_pct:.1f}% confidence)"
+            else:
+                interpretation = f"Attack ({prob_pct:.1f}% confidence)"
+
+            comparison_df.append({
                 'Model': display_name,
                 'Algorithm': model_descriptions.get(display_name, ''),
                 'Prediction': result['prediction'].upper(),
@@ -786,51 +779,41 @@ def tab_model_comparison():
                 'Confidence': result['confidence'].upper(),
                 'Interpretation': interpretation
             })
-        st.dataframe(pd.DataFrame(comparison_data), use_container_width=True, height=300)
 
+        st.dataframe(pd.DataFrame(comparison_df), use_container_width=True, height=300)
+
+        st.markdown("---")
+
+        # Probability distribution chart with better explanation
         st.markdown("### Attack Probability Comparison")
-        st.caption("Lower values (green) = model thinks it's normal | Higher values (red) = model thinks it's an attack")
-        prob_df = pd.DataFrame([(m.replace('_', ' ').title(), r['probability']) for m, r in st.session_state.current_predictions.items()], columns=['Model', 'Probability'])
-        fig = px.bar(prob_df, x='Model', y='Probability', color='Probability', color_continuous_scale='RdYlGn_r', text='Probability')
+        st.caption("Lower values (green) = Model thinks it's normal | Higher values (red) = Model thinks it's an attack")
+
+        probs = [(m.replace('_', ' ').title(), r['probability']) for m, r in st.session_state.current_predictions.items()]
+        prob_df = pd.DataFrame(probs, columns=['Model', 'Probability'])
+
+        fig = px.bar(prob_df, x='Model', y='Probability',
+                    color='Probability',
+                    color_continuous_scale='RdYlGn_r',
+                    text='Probability')
         fig.update_traces(texttemplate='%{text:.1%}', textposition='outside')
-        fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(26,31,58,0.5)', plot_bgcolor='rgba(26,31,58,0.8)', height=450,
-                          xaxis_title="Model", yaxis_title="Attack Probability", showlegend=False,
-                          yaxis_range=[0, min(1.0, max(prob_df['Probability'].max(), 0.2))],
-                          coloraxis_colorbar=dict(title="Risk", tickvals=[0, 0.5, 1.0], ticktext=["Safe", "Uncertain", "Attack"]))
+        fig.update_layout(
+            template="plotly_dark",
+            paper_bgcolor='rgba(26,31,58,0.5)',
+            plot_bgcolor='rgba(26,31,58,0.8)',
+            height=450,
+            xaxis_title="Machine Learning Model",
+            yaxis_title="Attack Probability (%)",
+            showlegend=False,
+            yaxis_range=[0, min(1.0, max(prob_df['Probability']) * 1.3)],
+            coloraxis_colorbar=dict(
+                title="Risk Level",
+                tickvals=[0, 0.5, 1.0],
+                ticktext=["Safe", "Uncertain", "Attack"]
+            )
+        )
         st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("---")
-    st.markdown("### Dataset Evaluation (Aggregated Metrics)")
-    features, labels, is_preprocessed, dataset_name, eval_warning = get_dataset_for_evaluation()
-    if eval_warning:
-        st.warning(eval_warning)
-    else:
-        total_rows = len(labels)
-        if total_rows == 0:
-            st.info("No labeled rows available for evaluation.")
-        else:
-            default_value = min(total_rows, 300)
-            sample_size = st.slider("Rows to evaluate", min_value=1, max_value=total_rows, value=default_value, step=1, key="dataset_eval_sample")
-            if st.button("Run Dataset Evaluation", use_container_width=True):
-                with st.spinner(f"Evaluating models on {sample_size} rows from {dataset_name}..."):
-                    summary, evaluated = evaluate_models_on_dataset(features, labels, sample_size, is_preprocessed)
-                    st.session_state.model_eval_results = {'summary': summary, 'dataset_name': dataset_name, 'sample_size': evaluated}
 
-    if 'model_eval_results' in st.session_state and st.session_state.model_eval_results.get('summary'):
-        eval_result = st.session_state.model_eval_results
-        summary_df = pd.DataFrame(eval_result['summary'])
-        if summary_df.empty:
-            st.info("Evaluation ran but returned no metrics.")
-        else:
-            st.success(f"Evaluated {len(summary_df)} models on {eval_result['sample_size']} rows from {eval_result['dataset_name']}.")
-            styled = summary_df.style.format({
-                'Accuracy': '{:.2%}',
-                'Precision': '{:.2%}',
-                'Recall': '{:.2%}',
-                'F1 Score': '{:.2%}',
-                'Avg Attack Probability': '{:.2%}'
-            }).highlight_max(subset=['Accuracy', 'F1 Score'], color='#14532d')
-            st.dataframe(styled, use_container_width=True, height=350)
 def tab_anomaly_detection():
     """Tab 3: COMPLETE Anomaly Detection Analysis - ALL 7 MODELS"""
     st.markdown('<div class="section-title">Comprehensive Anomaly Detection Analysis</div>', unsafe_allow_html=True)
@@ -1197,46 +1180,34 @@ def tab_anomaly_detection():
         """)
 
 
-
 def tab_network_analysis():
+    """Tab 4: Network Traffic Analysis"""
     st.markdown('<div class="section-title">Network Traffic Analysis</div>', unsafe_allow_html=True)
 
-    total_packets = len(st.session_state.packet_history)
-    attack_packets = len([p for p in st.session_state.packet_history if p['prediction'] == 'attack'])
-    attack_pct = (attack_packets / total_packets * 100) if total_packets else 0
-    dataset_label = st.session_state.get('custom_dataset_name', 'Default UNSW-NB15 testing set')
-
-    st.markdown(f"""
-    <div class="model-info-card" style="margin-bottom:1rem;">
-        <div class="model-info-title">Live dataset insights</div>
-        <div class="model-info-body">
-            <strong>Source file:</strong> {dataset_label}<br>
-            <strong>Packets analyzed:</strong> {total_packets:,} (attacks: {attack_packets:,}, {attack_pct:.1f}% of stream)<br>
-            <strong>Replay speed:</strong> slowed (~2 packets / refresh) for operator visibility.<br>
-            <em>Charts update as additional packets flow through the system.</em>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if total_packets == 0:
+    if len(st.session_state.packet_history) == 0:
         st.info("Start system to collect network data")
         return
 
     col1, col2, col3 = st.columns(3)
+
     with col1:
         st.markdown("### Protocol Distribution")
         if st.session_state.protocol_stats:
             proto_df = pd.DataFrame(list(st.session_state.protocol_stats.items()), columns=['Protocol', 'Count'])
-            fig = px.pie(proto_df, values='Count', names='Protocol', color_discrete_sequence=px.colors.sequential.Plasma)
+            fig = px.pie(proto_df, values='Count', names='Protocol',
+                        color_discrete_sequence=px.colors.sequential.Plasma)
             fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(26,31,58,0.5)', height=300)
             st.plotly_chart(fig, use_container_width=True)
 
     with col2:
         st.markdown("### Top Services")
         if st.session_state.port_stats:
-            port_df = pd.DataFrame(list(st.session_state.port_stats.items()), columns=['Service', 'Count']).nlargest(10, 'Count')
-            fig = px.bar(port_df, x='Service', y='Count', color='Count', color_continuous_scale='Viridis')
-            fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(26,31,58,0.5)', plot_bgcolor='rgba(26,31,58,0.8)', height=300)
+            port_df = pd.DataFrame(list(st.session_state.port_stats.items()), columns=['Service', 'Count'])
+            port_df = port_df.nlargest(10, 'Count')
+            fig = px.bar(port_df, x='Service', y='Count', color='Count',
+                        color_continuous_scale='Viridis')
+            fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(26,31,58,0.5)',
+                            plot_bgcolor='rgba(26,31,58,0.8)', height=300)
             st.plotly_chart(fig, use_container_width=True)
 
     with col3:
@@ -1245,36 +1216,43 @@ def tab_network_analysis():
         if attack_packets:
             attack_types = [p['attack_type'] for p in attack_packets]
             attack_dist = pd.Series(attack_types).value_counts()
-            fig = px.bar(x=attack_dist.index, y=attack_dist.values, color=attack_dist.values, color_continuous_scale='Reds')
-            fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(26,31,58,0.5)', plot_bgcolor='rgba(26,31,58,0.8)', height=300)
+            fig = px.bar(x=attack_dist.index, y=attack_dist.values,
+                        color=attack_dist.values,
+                        color_continuous_scale='Reds')
+            fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(26,31,58,0.5)',
+                            plot_bgcolor='rgba(26,31,58,0.8)', height=300)
             st.plotly_chart(fig, use_container_width=True)
-            st.markdown(f"*Most common attack so far:* **{attack_dist.index[0]}** ({attack_dist.iloc[0]} packets)")
 
+    # ADDED: Dataset Information
     st.markdown("---")
     with st.expander("Dataset information - UNSW-NB15", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("""
             **Dataset Details:**
-            - Source: UNSW Canberra Cyber Range Lab
-            - 82,332 flow records, 42 features
-            - Capture year: 2015
+            - **Source:** UNSW Canberra Cyber Range Lab
+            - **Total Samples:** 82,332 network flows
+            - **Features:** 42 network traffic features
+            - **Year:** 2015
             """)
         with col2:
             st.markdown("""
-            **Attack Categories:**
+            **Attack Categories (9 types):**
             - Backdoor, DoS, Exploits
             - Fuzzers, Generic, Reconnaissance
             - Shellcode, Worms, Analysis
-            - Rough split: ~56% attack / ~44% normal
+            - **Distribution:** ~56% attacks, ~44% normal
             """)
 
 
 def main():
+    """Main application"""
     render_header()
     render_control_panel()
+
     st.markdown("---")
 
+    # TABS - Dynamic model count
     num_models = len(st.session_state.multi_model.get_available_models())
     tab1, tab2, tab3, tab4 = st.tabs([
         "Real-Time Monitoring",
@@ -1285,13 +1263,17 @@ def main():
 
     with tab1:
         tab_realtime_monitoring()
+
     with tab2:
         tab_model_comparison()
+
     with tab3:
         tab_anomaly_detection()
+
     with tab4:
         tab_network_analysis()
 
+    # Auto-refresh
     if st.session_state.is_running:
         time.sleep(0.5)
         st.rerun()

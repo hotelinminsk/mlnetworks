@@ -100,7 +100,7 @@ class AlertSystem:
         messages = {
             'Backdoor': f"CRITICAL: Backdoor attack detected from {src} targeting {dst}:{service}",
             'Shellcode': f"CRITICAL: Shellcode injection attempt from {src} to {dst}:{service}",
-            'Exploits': f"HIGH: Exploit attempt detected - {src} → {dst}:{service}",
+            'Exploits': f"HIGH: Exploit attempt detected - {src} -> {dst}:{service}",
             'DoS': f"HIGH: Denial of Service attack from {src} targeting {dst}:{service}",
             'Worms': f"HIGH: Worm activity detected from {src}",
             'Reconnaissance': f"MEDIUM: Reconnaissance scan from {src} targeting {dst}:{service}",

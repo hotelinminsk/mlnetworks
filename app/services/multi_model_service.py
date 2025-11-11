@@ -50,11 +50,11 @@ class MultiModelService:
             if model_path.exists():
                 try:
                     self.models[model_name] = load(model_path)
-                    print(f"✓ Loaded {model_name}")
+                    print(f"Loaded {model_name}")
                 except Exception as e:
-                    print(f"✗ Failed to load {model_name}: {e}")
+                    print(f"Failed to load {model_name}: {e}")
 
-        print(f"\nLoaded {len(self.models)} models")
+        print(f"Loaded {len(self.models)} models")
 
     def predict_all(self, features: pd.DataFrame, threshold: float = 0.7, is_preprocessed: bool = False) -> Dict:
         """

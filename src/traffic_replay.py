@@ -1,60 +1,49 @@
-"""
-Traffic Replay System
-Replays UNSW-NB15 data as if it's live network traffic
-Perfect for professional demonstrations
-"""
-import pandas as pd
-import numpy as np
-import time
-from pathlib import Path
-from typing import Optional, Dict, List
-from datetime import datetime
-import threading
 import queue
+import threading
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional
+
+import pandas as pd
+
+from src.config import SIMULATED_SOURCE_POOL, SIMULATED_TARGET_POOL
 
 
 class TrafficReplay:
-    """
-    Replays real UNSW-NB15 data as live traffic
-    Makes the demo look professional with real attack scenarios
-    """
+    """Replays UNSW-NB15 (or uploaded) data as if it were live network traffic."""
 
-    def __init__(self, data_path: str, speed_multiplier: float = 1.0):
-        """
-        Initialize traffic replay
-
-        Args:
-            data_path: Path to UNSW-NB15 data file
-            speed_multiplier: Replay speed (1.0 = realtime, 2.0 = 2x speed, 0.5 = slow motion)
-        """
+    def __init__(self, data_path: str, speed_multiplier: float = 1.0, data_frame: Optional[pd.DataFrame] = None):
         self.data_path = Path(data_path)
         self.speed_multiplier = speed_multiplier
+        self.custom_data = data_frame
         self.data = None
         self.current_index = 0
         self.is_playing = False
         self.play_thread = None
         self.packet_queue = queue.Queue()
         self.attack_log = []
+        self.source_pool = SIMULATED_SOURCE_POOL.copy() or ["192.168.1.10"]
+        self.target_pool = SIMULATED_TARGET_POOL.copy() or ["10.0.0.10"]
+        self._source_idx = 0
+        self._target_idx = 0
 
     def load_data(self) -> bool:
-        """Load UNSW-NB15 data"""
         try:
+            if self.custom_data is not None:
+                self.data = self.custom_data.copy()
+                print(f"Loaded custom dataset with {len(self.data)} rows")
+                return True
+
             print(f"Loading data from: {self.data_path}")
             self.data = pd.read_parquet(self.data_path)
             print(f"Loaded {len(self.data)} records")
             return True
-        except Exception as e:
-            print(f"Error loading data: {e}")
+        except Exception as exc:
+            print(f"Error loading data: {exc}")
             return False
 
     def start_replay(self, shuffle: bool = False, loop: bool = True):
-        """
-        Start replaying traffic
-
-        Args:
-            shuffle: Shuffle data before replay for variety
-            loop: Loop replay when reaching end
-        """
         if self.data is None:
             if not self.load_data():
                 return
@@ -90,6 +79,7 @@ class TrafficReplay:
 
             # Add to queue
             packet_dict = packet.to_dict()
+            packet_dict = self._ensure_network_fields(packet_dict)
             packet_dict['timestamp'] = datetime.now()
             packet_dict['replay_index'] = self.current_index
 
@@ -100,9 +90,9 @@ class TrafficReplay:
                 attack_info = {
                     'timestamp': datetime.now(),
                     'attack_type': packet.get('attack_cat', 'Unknown'),
-                    'src_ip': packet.get('srcip', 'N/A'),
-                    'dst_ip': packet.get('dstip', 'N/A'),
-                    'service': packet.get('service', 'N/A')
+                    'src_ip': packet_dict.get('srcip', 'N/A'),
+                    'dst_ip': packet_dict.get('dstip', 'N/A'),
+                    'service': packet_dict.get('service', '-')
                 }
                 self.attack_log.append(attack_info)
 
@@ -163,8 +153,38 @@ class TrafficReplay:
         """Reset replay to beginning"""
         self.current_index = 0
         self.attack_log.clear()
+        self._source_idx = 0
+        self._target_idx = 0
         while not self.packet_queue.empty():
             self.packet_queue.get()
+
+    # ------------------------------------------------------------------
+    def _ensure_network_fields(self, packet: Dict) -> Dict:
+        packet = dict(packet)
+        packet['srcip'] = packet.get('srcip') if self._is_valid_ip(packet.get('srcip')) else self._next_source_ip()
+        packet['dstip'] = packet.get('dstip') if self._is_valid_ip(packet.get('dstip')) else self._next_target_ip()
+        if not packet.get('service'):
+            packet['service'] = '-'
+        return packet
+
+    @staticmethod
+    def _is_valid_ip(value: Optional[str]) -> bool:
+        if value is None:
+            return False
+        value_str = str(value).strip()
+        if not value_str or value_str.upper() in {'N/A', 'NA'}:
+            return False
+        return True
+
+    def _next_source_ip(self) -> str:
+        ip = self.source_pool[self._source_idx % len(self.source_pool)]
+        self._source_idx += 1
+        return ip
+
+    def _next_target_ip(self) -> str:
+        ip = self.target_pool[self._target_idx % len(self.target_pool)]
+        self._target_idx += 1
+        return ip
 
 
 if __name__ == "__main__":

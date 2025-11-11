@@ -28,7 +28,7 @@ class RealtimeIDSService:
     - Tracks statistics
     """
 
-    def __init__(self, model_name: str = "gradient_boosting"):
+    def __init__(self, model_name: str = "gradient_boosting", data_frame: Optional[pd.DataFrame] = None):
         """
         Initialize IDS service
 
@@ -43,7 +43,8 @@ class RealtimeIDSService:
         # Initialize components
         self.replay = TrafficReplay(
             DATA_RAW / "testing-set.parquet",
-            speed_multiplier=10.0  # 10x speed for demo
+            speed_multiplier=3.0,
+            data_frame=data_frame
         )
         self.alert_system = AlertSystem()
 
@@ -147,11 +148,13 @@ class RealtimeIDSService:
             'srcip': packet.get('srcip', 'N/A'),
             'dstip': packet.get('dstip', 'N/A'),
             'service': packet.get('service', '-'),
+            'dur': packet.get('dur'),
             'prediction': 'attack' if prediction == 1 else 'normal',
             'probability': round(prob, 4),
             'true_label': true_label,
             'attack_type': attack_cat if attack_cat else None,
-            'alert': alert
+            'alert': alert,
+            'raw_packet': packet
         }
 
         # Add to recent packets
