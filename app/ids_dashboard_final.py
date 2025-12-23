@@ -1,6 +1,8 @@
 """
 Streamlit dashboard for live UNSW-NB15 IDS demo
 """
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend - must be before other imports
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -677,10 +679,16 @@ def tab_realtime_monitoring():
         st.session_state.last_processed = packet
         if packet['prediction'] == 'attack' and packet.get('attack_type') and packet['attack_type'] != 'Normal':
             st.session_state.latest_attack = packet
-        proto = packet.get('proto', 'Unknown')
-        st.session_state.protocol_stats[proto] = st.session_state.protocol_stats.get(proto, 0) + 1
-        service = packet.get('service', 'Unknown')
-        st.session_state.port_stats[service] = st.session_state.port_stats.get(service, 0) + 1
+        # Get protocol from raw_packet if available, otherwise from packet
+        raw_packet = packet.get('raw_packet', {})
+        proto = raw_packet.get('proto') or packet.get('proto') or 'Unknown'
+        if proto and str(proto).strip() and str(proto) != 'nan':
+            st.session_state.protocol_stats[str(proto)] = st.session_state.protocol_stats.get(str(proto), 0) + 1
+        
+        # Get service from raw_packet if available, otherwise from packet
+        service = raw_packet.get('service') or packet.get('service') or 'Unknown'
+        if service and str(service).strip() and str(service) != 'nan' and str(service) != '-':
+            st.session_state.port_stats[str(service)] = st.session_state.port_stats.get(str(service), 0) + 1
 
     if st.session_state.latest_attack:
         st.markdown("### Latest Attack Detected - Full Analysis")
@@ -786,7 +794,7 @@ def tab_model_comparison():
                 'Confidence': result['confidence'].upper(),
                 'Interpretation': interpretation
             })
-        st.dataframe(pd.DataFrame(comparison_data), use_container_width=True, height=300)
+        st.dataframe(pd.DataFrame(comparison_data), use_container_width=True, height=300, key="model_predictions_table")
 
         st.markdown("### Attack Probability Comparison")
         st.caption("Lower values (green) = model thinks it's normal | Higher values (red) = model thinks it's an attack")
@@ -830,7 +838,7 @@ def tab_model_comparison():
                 'F1 Score': '{:.2%}',
                 'Avg Attack Probability': '{:.2%}'
             }).highlight_max(subset=['Accuracy', 'F1 Score'], color='#14532d')
-            st.dataframe(styled, use_container_width=True, height=350)
+            st.dataframe(styled, use_container_width=True, height=350, key="model_eval_table")
 def tab_anomaly_detection():
     """Tab 3: COMPLETE Anomaly Detection Analysis - ALL 7 MODELS"""
     st.markdown('<div class="section-title">Comprehensive Anomaly Detection Analysis</div>', unsafe_allow_html=True)
@@ -850,93 +858,147 @@ def tab_anomaly_detection():
         sample_size = st.slider("Sample Size for Analysis", 100, 2000, 1000, 100)
     with col2:
         if st.button("Run Complete Analysis", use_container_width=True):
-            with st.spinner("Running comprehensive anomaly detection analysis across all 7 models..."):
+            with st.spinner("Running comprehensive anomaly detection analysis across all models..."):
                 try:
-                    samples = X_test.iloc[:sample_size]
-                    labels = y_test[:sample_size]
+                    # Use same random sampling approach as tab 2 (evaluate_models_on_dataset)
+                    # This ensures consistent results between tabs
+                    indices = np.arange(len(y_test))
+                    if len(indices) > sample_size:
+                        rng = np.random.default_rng(42)  # Same seed as tab 2
+                        indices = np.sort(rng.choice(indices, size=sample_size, replace=False))
+                    else:
+                        indices = indices
+                    
+                    samples = X_test.iloc[indices]
+                    labels = y_test[indices]
 
-                    # X_test is already preprocessed, no need to transform again!
+                    # X_test is already preprocessed (from DATA_PROCESSED), so use it directly
+                    # But we need to ensure it's in the right format for models
                     X_prep = samples.values  # Convert to numpy array for models
+                    
+                    # Verify data shape
+                    if X_prep.shape[0] != len(labels):
+                        st.error(f"Data shape mismatch: features {X_prep.shape[0]} vs labels {len(labels)}")
+                        return
+                        
                 except Exception as e:
                     st.error(f"Error preparing data: {str(e)}")
+                    st.exception(e)
                     return
 
-                # Store results for all models
+                # Store results for all models - use same approach as tab 2 (evaluate_models_on_dataset)
+                # Process each sample individually using predict_all() for consistency
                 model_results = {}
+                
+                # Initialize metrics for all models
+                for model_name in st.session_state.multi_model.get_available_models():
+                    model_results[model_name] = {
+                        'predictions': [],
+                        'probabilities': [],
+                        'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0
+                    }
 
                 try:
+                    # Process each sample individually using predict_all() - same as tab 2
+                    progress_bar = st.progress(0)
+                    for idx in range(len(samples)):
+                        row = samples.iloc[idx:idx+1]  # Get single row as DataFrame
+                        true_label = int(labels[idx])
+                        
+                        # Use predict_all() with is_preprocessed=True - same as tab 2
+                        predictions = st.session_state.multi_model.predict_all(row, is_preprocessed=True)
+                        
+                        for model_name, result in predictions.items():
+                            if result['prediction'] == 'error':
+                                continue
+                            
+                            pred = 1 if result['prediction'] == 'attack' else 0
+                            prob = result['probability']
+                            
+                            model_results[model_name]['predictions'].append(pred)
+                            model_results[model_name]['probabilities'].append(prob)
+                            
+                            # Calculate confusion matrix components
+                            if true_label == 1 and pred == 1:
+                                model_results[model_name]['tp'] += 1
+                            elif true_label == 0 and pred == 0:
+                                model_results[model_name]['tn'] += 1
+                            elif true_label == 0 and pred == 1:
+                                model_results[model_name]['fp'] += 1
+                            else:
+                                model_results[model_name]['fn'] += 1
+                        
+                        # Update progress
+                        if (idx + 1) % 100 == 0:
+                            progress_bar.progress((idx + 1) / len(samples))
+                    
+                    progress_bar.progress(1.0)
+                    
+                    # Calculate metrics for each model
                     for model_name in st.session_state.multi_model.get_available_models():
-                        try:
-                            model = st.session_state.multi_model.models[model_name]
-
-                            if model_name == 'isolation_forest':
-                                # Isolation Forest returns -1 for anomaly, 1 for normal
-                                preds = model.predict(X_prep)
-                                predictions = (preds == -1).astype(int)
-                                # For probability, use decision function scores
-                                scores = model.score_samples(X_prep)
-                                # Normalize scores to [0,1] range for consistency
-                                probabilities = 1 / (1 + np.exp(scores))  # Sigmoid transformation
-                            else:
-                                # Supervised models
-                                predictions = model.predict(X_prep)
-                                try:
-                                    probabilities = model.predict_proba(X_prep)[:, 1]
-                                except:
-                                    probabilities = predictions.astype(float)
-
-                            # Calculate metrics
-                            cm = confusion_matrix(labels, predictions)
-
-                            # Handle case where confusion matrix doesn't have all 4 values
-                            if cm.size == 4:
-                                tn, fp, fn, tp = cm.ravel()
-                            else:
-                                # If only one class predicted, handle gracefully
-                                tn = fp = fn = tp = 0
-                                if cm.shape[0] == 1:
-                                    if labels[0] == 0:
-                                        tn = cm[0, 0]
-                                    else:
-                                        tp = cm[0, 0]
-
-                            accuracy = (tp + tn) / (tp + tn + fp + fn) if (tp + tn + fp + fn) > 0 else 0
-                            precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-                            recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-                            f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
-                            fpr = fp / (fp + tn) if (fp + tn) > 0 else 0
-
-                            # ROC curve
-                            try:
-                                fpr_curve, tpr_curve, _ = roc_curve(labels, probabilities)
-                                roc_auc = auc(fpr_curve, tpr_curve)
-                            except:
-                                fpr_curve, tpr_curve, roc_auc = [0], [0], 0
-
-                            model_results[model_name] = {
-                                'predictions': predictions,
-                                'probabilities': probabilities,
-                                'confusion_matrix': cm,
-                                'accuracy': accuracy,
-                                'precision': precision,
-                                'recall': recall,
-                                'f1': f1,
-                                'fpr': fpr,
-                                'roc_fpr': fpr_curve,
-                                'roc_tpr': tpr_curve,
-                                'roc_auc': roc_auc,
-                                'tp': tp, 'fp': fp, 'tn': tn, 'fn': fn
-                            }
-                        except Exception as e:
-                            st.warning(f"Error processing {model_name}: {str(e)}")
+                        if model_name not in model_results:
                             continue
+                        
+                        result = model_results[model_name]
+                        tp, tn, fp, fn = result['tp'], result['tn'], result['fp'], result['fn']
+                        
+                        # Calculate metrics
+                        accuracy = (tp + tn) / (tp + tn + fp + fn) if (tp + tn + fp + fn) > 0 else 0
+                        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+                        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+                        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+                        fpr = fp / (fp + tn) if (fp + tn) > 0 else 0
+                        
+                        # Convert lists to numpy arrays for ROC calculation
+                        predictions_array = np.array(result['predictions'])
+                        probabilities_array = np.array(result['probabilities'])
+                        
+                        # ROC curve
+                        try:
+                            if len(np.unique(probabilities_array)) > 1 and not np.isnan(probabilities_array).any():
+                                fpr_curve, tpr_curve, _ = roc_curve(labels, probabilities_array)
+                                roc_auc = auc(fpr_curve, tpr_curve)
+                            else:
+                                fpr_curve, tpr_curve = np.array([0, 1]), np.array([0, 1])
+                                roc_auc = 0.5
+                        except Exception as e:
+                            fpr_curve, tpr_curve = np.array([0, 1]), np.array([0, 1])
+                            roc_auc = 0.5
+                        
+                        # Update model_results with calculated metrics
+                        cm = np.array([[tn, fp], [fn, tp]])
+                        model_results[model_name].update({
+                            'confusion_matrix': cm,
+                            'accuracy': accuracy,
+                            'precision': precision,
+                            'recall': recall,
+                            'f1': f1,
+                            'fpr': fpr,
+                            'roc_fpr': fpr_curve,
+                            'roc_tpr': tpr_curve,
+                            'roc_auc': roc_auc,
+                            'predictions': predictions_array,
+                            'probabilities': probabilities_array
+                        })
+                    
+                    # Remove any models that failed to process
+                    model_results = {k: v for k, v in model_results.items() if 'accuracy' in v}
 
                     # Calculate ensemble prediction (majority voting)
+                    # Exclude 'ensemble' key if it exists
                     if len(model_results) > 0:
                         ensemble_votes = np.zeros(len(samples))
-                        for result in model_results.values():
-                            ensemble_votes += result['predictions']
-                        ensemble_preds = (ensemble_votes >= (len(model_results) // 2 + 1)).astype(int)
+                        model_count = 0
+                        for model_name, result in model_results.items():
+                            if model_name != 'ensemble':  # Exclude ensemble itself
+                                # Ensure predictions is a numpy array
+                                preds = np.array(result['predictions']) if 'predictions' in result else np.zeros(len(samples))
+                                ensemble_votes += preds
+                                model_count += 1
+                        
+                        # Majority voting: if more than half vote for attack (1), predict attack
+                        threshold = model_count / 2.0
+                        ensemble_preds = (ensemble_votes > threshold).astype(int)
 
                         # Ensemble metrics
                         cm_ensemble = confusion_matrix(labels, ensemble_preds)
@@ -945,14 +1007,50 @@ def tab_anomaly_detection():
                         else:
                             tn_e = fp_e = fn_e = tp_e = 0
 
+                        # Calculate ensemble metrics correctly
+                        precision_e = tp_e / (tp_e + fp_e) if (tp_e + fp_e) > 0 else 0
+                        recall_e = tp_e / (tp_e + fn_e) if (tp_e + fn_e) > 0 else 0
+                        f1_e = 2 * (precision_e * recall_e) / (precision_e + recall_e) if (precision_e + recall_e) > 0 else 0
+                        
+                        # Calculate ensemble probabilities (average of all model probabilities)
+                        ensemble_probs = np.zeros(len(samples))
+                        prob_count = 0
+                        for model_name, result in model_results.items():
+                            if model_name != 'ensemble' and 'probabilities' in result:
+                                # Ensure probabilities is a numpy array
+                                probs = np.array(result['probabilities'])
+                                ensemble_probs += probs
+                                prob_count += 1
+                        
+                        if prob_count > 0:
+                            ensemble_probs = ensemble_probs / prob_count
+                        else:
+                            ensemble_probs = ensemble_preds.astype(float)
+                        
+                        # Calculate ROC curve for ensemble
+                        try:
+                            if len(np.unique(ensemble_probs)) > 1 and not np.isnan(ensemble_probs).any():
+                                fpr_curve_e, tpr_curve_e, _ = roc_curve(labels, ensemble_probs)
+                                roc_auc_e = auc(fpr_curve_e, tpr_curve_e)
+                            else:
+                                fpr_curve_e, tpr_curve_e = np.array([0, 1]), np.array([0, 1])
+                                roc_auc_e = 0.5
+                        except:
+                            fpr_curve_e, tpr_curve_e = np.array([0, 1]), np.array([0, 1])
+                            roc_auc_e = 0.5
+                        
                         model_results['ensemble'] = {
                             'predictions': ensemble_preds,
+                            'probabilities': ensemble_probs,
                             'confusion_matrix': cm_ensemble,
                             'accuracy': (tp_e + tn_e) / (tp_e + tn_e + fp_e + fn_e) if (tp_e + tn_e + fp_e + fn_e) > 0 else 0,
-                            'precision': tp_e / (tp_e + fp_e) if (tp_e + fp_e) > 0 else 0,
-                            'recall': tp_e / (tp_e + fn_e) if (tp_e + fn_e) > 0 else 0,
-                            'f1': 2 * (tp_e / (tp_e + fp_e)) * (tp_e / (tp_e + fn_e)) / ((tp_e / (tp_e + fp_e)) + (tp_e / (tp_e + fn_e))) if (tp_e + fp_e) > 0 and (tp_e + fn_e) > 0 else 0,
+                            'precision': precision_e,
+                            'recall': recall_e,
+                            'f1': f1_e,
                             'fpr': fp_e / (fp_e + tn_e) if (fp_e + tn_e) > 0 else 0,
+                            'roc_fpr': fpr_curve_e,
+                            'roc_tpr': tpr_curve_e,
+                            'roc_auc': roc_auc_e,
                             'tp': tp_e, 'fp': fp_e, 'tn': tn_e, 'fn': fn_e
                         }
 
@@ -1017,17 +1115,28 @@ def tab_anomaly_detection():
 
         colors = ['#00d4ff', '#ff00ea', '#00ff88', '#fbbf24', '#f59e0b', '#dc2626', '#8b5cf6']
 
-        for idx, (model_name, result) in enumerate(results.items()):
-            if model_name == 'ensemble':
-                continue
+        model_idx = 0
+        for model_name, result in results.items():
             if 'roc_fpr' in result and 'roc_tpr' in result:
-                fig.add_trace(go.Scatter(
-                    x=result['roc_fpr'],
-                    y=result['roc_tpr'],
-                    mode='lines',
-                    name=f"{model_name.replace('_', ' ').title()} (AUC={result.get('roc_auc', 0):.3f})",
-                    line=dict(color=colors[idx % len(colors)], width=2)
-                ))
+                # Check if ROC data is valid (not just [0, 1] default)
+                fpr_data = result['roc_fpr']
+                tpr_data = result['roc_tpr']
+                
+                # Skip if invalid (all zeros or default values)
+                if isinstance(fpr_data, np.ndarray) and len(fpr_data) > 2:
+                    # Valid ROC curve
+                    display_name = model_name.replace('_', ' ').title()
+                    if model_name == 'ensemble':
+                        display_name = 'Ensemble (Majority Voting)'
+                    
+                    fig.add_trace(go.Scatter(
+                        x=fpr_data,
+                        y=tpr_data,
+                        mode='lines',
+                        name=f"{display_name} (AUC={result.get('roc_auc', 0):.3f})",
+                        line=dict(color=colors[model_idx % len(colors)], width=2 if model_name != 'ensemble' else 3)
+                    ))
+                    model_idx += 1
 
         # Diagonal line
         fig.add_trace(go.Scatter(
@@ -1201,6 +1310,8 @@ def tab_anomaly_detection():
 def tab_network_analysis():
     st.markdown('<div class="section-title">Network Traffic Analysis</div>', unsafe_allow_html=True)
 
+    st.checkbox("Pause auto-refresh (fullscreen için etkinleştirin)", key="pause_refresh")
+
     total_packets = len(st.session_state.packet_history)
     attack_packets = len([p for p in st.session_state.packet_history if p['prediction'] == 'attack'])
     attack_pct = (attack_packets / total_packets * 100) if total_packets else 0
@@ -1227,9 +1338,17 @@ def tab_network_analysis():
         st.markdown("### Protocol Distribution")
         if st.session_state.protocol_stats:
             proto_df = pd.DataFrame(list(st.session_state.protocol_stats.items()), columns=['Protocol', 'Count'])
-            fig = px.pie(proto_df, values='Count', names='Protocol', color_discrete_sequence=px.colors.sequential.Plasma)
-            fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(26,31,58,0.5)', height=300)
-            st.plotly_chart(fig, use_container_width=True)
+            # Filter out 'Unknown' if it's the only value or if there are other values
+            if len(proto_df) > 1:
+                proto_df = proto_df[proto_df['Protocol'] != 'Unknown']
+            if len(proto_df) > 0:
+                fig = px.pie(proto_df, values='Count', names='Protocol', color_discrete_sequence=px.colors.sequential.Plasma)
+                fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(26,31,58,0.5)', height=300, showlegend=True)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("No protocol data available yet")
+        else:
+            st.info("No protocol data collected yet")
 
     with col2:
         st.markdown("### Top Services")
@@ -1275,6 +1394,10 @@ def main():
     render_control_panel()
     st.markdown("---")
 
+    # Auto-refresh control (useful when opening charts fullscreen)
+    if 'pause_refresh' not in st.session_state:
+        st.session_state.pause_refresh = False
+
     num_models = len(st.session_state.multi_model.get_available_models())
     tab1, tab2, tab3, tab4 = st.tabs([
         "Real-Time Monitoring",
@@ -1292,7 +1415,7 @@ def main():
     with tab4:
         tab_network_analysis()
 
-    if st.session_state.is_running:
+    if st.session_state.is_running and not st.session_state.pause_refresh:
         time.sleep(0.5)
         st.rerun()
 
