@@ -26,12 +26,24 @@ data/
 ```
 
 ## Getting started
+1) **Set up the environment**
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+```
+
+2) **Place data and models**  
+The dashboard requires the following to be present:
+- `data/raw/testing-set.parquet` (UNSW-NB15 test parquet – copy from `dataset/` if you have it)
+- `data/processed/X_test.csv` and `data/processed/y_test.csv` (processed test split)
+- `models/preprocess_ct.joblib` and model files: `gradient_boosting.joblib`, `random_forest.joblib`, `extra_trees.joblib`, `supervised_sgd.joblib`, `isolation_forest.joblib`
+
+3) **Run**
+```bash
 streamlit run app/ids_dashboard_final.py
 ```
+Default port: http://localhost:8501
 
 ### Docker
 ```bash
