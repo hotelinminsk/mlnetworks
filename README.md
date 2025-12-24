@@ -8,6 +8,10 @@ This repo now contains only the Streamlit dashboard that replays UNSW-NB15 traff
 - **Model comparison:** evaluate all bundled models on any row, then run aggregated accuracy/precision/recall/F1 for a chosen dataset slice.
 - **Network analytics:** protocol/service/attack charts update as packets flow; dataset summary highlights what portion has been inspected.
 
+## System Architecture
+![System Architecture](system_architecture.png)
+*Figure 1: High-level architecture showing data flow, services, and the Streamlit dashboard.*
+
 ## Project layout
 ```
 app/
