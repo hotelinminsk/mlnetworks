@@ -25,6 +25,10 @@ from services.realtime_ids_service import RealtimeIDSService
 from services.multi_model_service import MultiModelService
 from src.config import DATA_PROCESSED
 
+import warnings
+# Suppress the persistent sklearn valid feature names warning
+warnings.filterwarnings("ignore", message="X does not have valid feature names")
+
 # ---------------------------------------------------------------------------
 # Page + global theme
 st.set_page_config(
@@ -434,7 +438,7 @@ def render_current_packet_detail():
 
     raw_packet = packet.get('raw_packet') or {}
     row_idx = raw_packet.get('replay_index', 'N/A')
-    dataset_label = st.session_state.get('custom_dataset_name', 'Default UNSW-NB15 testing set')
+    dataset_label = st.session_state.get('custom_dataset_name') or 'Default UNSW-NB15 testing set'
 
     prediction = packet.get('prediction', 'unknown').upper()
     probability = packet.get('probability', 0)
@@ -583,21 +587,40 @@ def tab_realtime_monitoring():
                 st.success(f"Model selection updated to {selected_model.replace('_', ' ').title()}. Start the system to apply it.")
 
         with col2:
-            dataset_label = st.session_state.get('custom_dataset_name', "Default UNSW-NB15 testing set")
-            model_list = "<br>".join([f"- {m.replace('_', ' ').title()}" for m in available_models])
-            st.markdown(
-                f"""
+            dataset_label = st.session_state.get('custom_dataset_name') or "Default UNSW-NB15 testing set"
+            
+            # Create styled badges for models - compact to single line to avoid markdown code blocks
+            badges_html = ""
+            for m in available_models:
+                display_name = m.replace('_', ' ').title()
+                is_selected = (m == selected_model)
+                bg_color = "rgba(59,130,246,0.5)" if is_selected else "rgba(30,41,59,0.5)"
+                border_color = "#60a5fa" if is_selected else "rgba(148,163,184,0.3)"
+                text_color = "#ffffff" if is_selected else "#94a3b8"
+                weight = "700" if is_selected else "500"
+                
+                # Use single line string to prevent markdown indentation issues
+                badges_html += f'<span style="display:inline-block;padding:4px 10px;margin:2px;background:{bg_color};border:1px solid {border_color};border-radius:12px;color:{text_color};font-size:0.75rem;font-weight:{weight};">{display_name}</span>'
+
+            # Styled Data Source Badge - compact to single line
+            ds_badge = f'<span style="display:inline-block;padding:3px 10px;background:rgba(124,58,237,0.15);border:1px solid rgba(139,92,246,0.3);border-radius:10px;color:#ddd6fe;font-size:0.8rem;font-weight:600;">{dataset_label}</span>'
+
+            # Render final HTML block
+            st.markdown(dedent(f"""
                 <div class="model-info-card">
                     <div class="model-info-title">Pending Model: {selected_model.replace('_', ' ').title()}</div>
                     <div class="model-info-body">
-                        <strong>Data Source:</strong> {dataset_label}<br><br>
-                        <strong>Available Models ({len(available_models)}):</strong><br>
-                        {model_list}
+                        <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                            <span style="color:#94a3b8;font-weight:600;font-size:0.85rem;">DATA SOURCE:</span>
+                            {ds_badge}
+                        </div>
+                        <div style="color:#94a3b8;font-weight:600;font-size:0.85rem;margin-bottom:6px;">AVAILABLE MODELS:</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                            {badges_html}
+                        </div>
                     </div>
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+            """).strip(), unsafe_allow_html=True)
 
         uploaded_file = st.file_uploader("Upload CSV or Parquet for live replay", type=["csv", "parquet"])
         if uploaded_file is not None:
@@ -671,7 +694,8 @@ def tab_realtime_monitoring():
     render_current_packet_detail()
     st.markdown("---")
 
-    for _ in range(2):
+    # Process 1 packet per rerun for smoother "row by row" feel
+    for _ in range(1):
         packet = st.session_state.ids_service.process_next_packet()
         if not packet:
             continue

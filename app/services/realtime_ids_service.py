@@ -97,6 +97,13 @@ class RealtimeIDSService:
         try:
             X = self.preprocessor.transform(features_df)
 
+            # Fix: Restore feature names to suppress sklearn warning
+            if hasattr(self.model, 'feature_names_in_') and not isinstance(X, pd.DataFrame):
+                try:
+                    X = pd.DataFrame(X, columns=self.model.feature_names_in_)
+                except Exception:
+                    pass  # Fallback if dimensions don't match
+
             if hasattr(self.model, 'predict_proba'):
                 prob = self.model.predict_proba(X)[0][1]
             else:

@@ -85,25 +85,53 @@ class MultiModelService:
 
         for model_name, model in self.models.items():
             try:
+                # Fix: Restore feature names to suppress sklearn warning
+                model_input = X
+                if hasattr(model, 'feature_names_in_') and not isinstance(X, pd.DataFrame):
+                    try:
+                        model_input = pd.DataFrame(X, columns=model.feature_names_in_)
+                    except Exception:
+                        pass
+
+                custom_prediction = None
+
                 # Get probability or score
-                if hasattr(model, 'predict_proba'):
-                    prob = model.predict_proba(X)[0][1]
+                if hasattr(model, 'predict_proba') and 'isolation' not in model_name:
+                    prob = model.predict_proba(model_input)[0][1]
+                elif 'isolation' in model_name and hasattr(model, 'decision_function'):
+                     # Isolation Forest: Negative score = Anomaly (Attack)
+                     score = model.decision_function(model_input)[0]
+                     # Map score to probability for display
+                     prob = 1 / (1 + np.exp(score))
+                     # DIRECT PREDICTION: Score < 0 is anomaly. Ignore global threshold for IF.
+                     custom_prediction = 1 if score < 0 else 0
                 elif hasattr(model, 'decision_function'):
-                    score = model.decision_function(X)[0]
+                    score = model.decision_function(model_input)[0]
                     # Normalize score to probability-like
                     prob = 1 / (1 + np.exp(-score))
+                    custom_prediction = None
                 elif hasattr(model, 'score_samples'):
-                    # Isolation Forest
-                    score = model.score_samples(X)[0]
+                    # Isolation Forest fallback if decision_function missing
+                    score = model.score_samples(model_input)[0]
                     # Convert to probability (lower score = more anomalous)
                     prob = 1 / (1 + np.exp(score))  # Invert so high prob = anomaly
+                    custom_prediction = None
                 else:
                     # Fallback: just use predict
-                    pred = model.predict(X)[0]
-                    prob = float(pred)
+                    pred = model.predict(model_input)[0]
+                    # IF returns -1 for anomaly, 1 for normal
+                    if 'isolation' in model_name:
+                         prob = 1.0 if pred == -1 else 0.0
+                         custom_prediction = 1 if pred == -1 else 0
+                    else:
+                         prob = float(pred)
+                         custom_prediction = None
 
-                # Apply threshold
-                prediction = 1 if prob >= threshold else 0
+                # Apply threshold (use custom_prediction if set, otherwise standard threshold)
+                if custom_prediction is not None:
+                    prediction = custom_prediction
+                else:
+                    prediction = 1 if prob >= threshold else 0
 
                 results[model_name] = {
                     'prediction': 'attack' if prediction == 1 else 'normal',

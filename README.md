@@ -34,10 +34,14 @@ pip install -r requirements.txt
 ```
 
 2) **Place data and models**  
-The dashboard requires the following to be present:
-- `data/raw/testing-set.parquet` (UNSW-NB15 test parquet – copy from `dataset/` if you have it)
-- `data/processed/X_test.csv` and `data/processed/y_test.csv` (processed test split)
-- `models/preprocess_ct.joblib` and model files: `gradient_boosting.joblib`, `random_forest.joblib`, `extra_trees.joblib`, `supervised_sgd.joblib`, `isolation_forest.joblib`
+Data files are compressed to save space.  
+- **Extract** `data.rar` (or `.zip`) to the project root so you have a `data/` folder containing `raw/` and `processed/`.
+- Ensure `models/` folder contains the pretrained `.joblib` files.
+
+The dashboard requires:
+- `data/raw/testing-set.parquet`
+- `data/processed/X_test.csv` & `y_test.csv`
+- `models/*.joblib`
 
 3) **Run**
 ```bash
