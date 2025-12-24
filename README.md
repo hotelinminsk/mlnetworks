@@ -47,7 +47,7 @@ The dashboard requires:
 ```bash
 streamlit run app/ids_dashboard_final.py
 ```
-Default port: http://localhost:8501
+Default port: http://localhost:8501.
 
 ### Docker
 ```bash
