@@ -1309,25 +1309,74 @@ def tab_anomaly_detection():
         st.markdown("### Ensemble Performance")
 
         ensemble_result = results['ensemble']
+        
+        col_metrics, col_chart = st.columns([1, 1.2])
 
-        col1, col2, col3, col4, col5 = st.columns(5)
+        with col_metrics:
+            st.markdown("#### Key Metrics")
+            row1_1, row1_2 = st.columns(2)
+            with row1_1:
+                st.metric("Accuracy", f"{ensemble_result['accuracy']:.2%}")
+                st.metric("Recall", f"{ensemble_result['recall']:.2%}")
+            with row1_2:
+                st.metric("Precision", f"{ensemble_result['precision']:.2%}")
+                st.metric("F1-Score", f"{ensemble_result['f1']:.2%}")
+            
+            st.metric("False Positive Rate", f"{ensemble_result['fpr']:.2%}", delta="-Low is good", delta_color="inverse")
 
-        with col1:
-            st.metric("Accuracy", f"{ensemble_result['accuracy']:.2%}")
-        with col2:
-            st.metric("Precision", f"{ensemble_result['precision']:.2%}")
-        with col3:
-            st.metric("Recall", f"{ensemble_result['recall']:.2%}")
-        with col4:
-            st.metric("F1-Score", f"{ensemble_result['f1']:.2%}")
-        with col5:
-            st.metric("False Positive Rate", f"{ensemble_result['fpr']:.2%}")
+            st.success(f"""
+            **Ensemble Advantage:** By combining all 5 models through majority voting, the ensemble achieves
+            **{ensemble_result['accuracy']:.1%} accuracy** with only **{ensemble_result['fpr']:.1%} false positive rate**.
+            This approach leverages the strengths of both supervised and unsupervised learning for robust anomaly detection.
+            """)
 
-        st.success(f"""
-        **Ensemble Advantage:** By combining all 5 models through majority voting, the ensemble achieves
-        {ensemble_result['accuracy']:.1%} accuracy with only {ensemble_result['fpr']:.1%} false positive rate.
-        This approach leverages the strengths of both supervised and unsupervised learning for robust anomaly detection.
-        """)
+        with col_chart:
+            # Radar Chart
+            categories = ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'Specificity (1-FPR)']
+            
+            # Calculate Specificity (TN / (TN+FP) = 1 - FPR)
+            specificity = 1 - ensemble_result['fpr']
+            
+            values = [
+                ensemble_result['accuracy'],
+                ensemble_result['precision'],
+                ensemble_result['recall'],
+                ensemble_result['f1'],
+                specificity
+            ]
+
+            fig = go.Figure()
+
+            fig.add_trace(go.Scatterpolar(
+                r=values,
+                theta=categories,
+                fill='toself',
+                name='Ensemble',
+                line_color='#00d4ff',
+                fillcolor='rgba(0, 212, 255, 0.2)'
+            ))
+
+            fig.update_layout(
+                polar=dict(
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, 1],
+                        tickformat='.0%',
+                        gridcolor='rgba(255, 255, 255, 0.1)',
+                        linecolor='rgba(255, 255, 255, 0.1)'
+                    ),
+                    bgcolor='rgba(0,0,0,0)'
+                ),
+                showlegend=False,
+                title="Ensemble Capabilities Profile",
+                template="plotly_dark",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                height=350,
+                margin=dict(l=40, r=40, t=40, b=20)
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
 
 
 
